@@ -1,0 +1,12 @@
+opam-version: "2.0.3"
+name: "octagonai"
+version: "1.0"
+synopsis: "OctagonAI executable"
+description: "Static interpreter using abstract interpretation on the octagon abstract domain"
+authors: "Siang-Yun (Sonia) Lee, Dewmini Sudara Marakkalage, Orégane Desrentes, Jérôme Boillot"
+depends: [
+	"dune" {build}
+	"FrontC" {>= "3.4.2"}
+	"ocaml" {>= "4.05.0"}
+]
+

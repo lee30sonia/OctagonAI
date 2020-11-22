@@ -1,0 +1,4 @@
+(executable
+	(name octagonai)
+	(public_name octagonai)
+	(libraries FrontC))
