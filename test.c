@@ -1,9 +1,13 @@
 int coucou(int c, int d) {}
 int main() {}
 
-int (*a(int c))(int b) {}
+int (*a(int c))(int b[5]) {}
 
-int *b() {}
+int b(int *cmp) {}
+
+int c(int (*cmp)(void*,void*)) {}
+
+int always_more_awful(int (*cmp[4])(void*,void*)) {}
 
 
 /*

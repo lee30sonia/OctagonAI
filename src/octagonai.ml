@@ -12,17 +12,38 @@ type decl = typee * str_name * arg_list option
 type signature = typee * arg_list option
 
 
-let rec parse_base_type (base_type : base_type) : signature  = 
-    match base_type with
+let rec print_args (l: arg_list) : unit =
+    match l with
+    | (tpe, name)::t ->
+        print_endline ("\t" ^ tpe ^ " " ^ name);
+        print_args t
+    | [] -> ()
+
+let join_args_with_commas (l: arg_list): string =
+  let rec join_args_with_commas_aux (l:arg_list) (result: string): string =
+    match l with
+    | (tpe, name)::t -> join_args_with_commas_aux t (result ^ tpe ^ " " ^ name ^ (if t = [] then "" else ", "))
+    | [] -> result
+  in join_args_with_commas_aux l ""
+
+let rec parse_base_type (base_type : base_type): signature  = 
+  match base_type with
 	| PROTO (base_typetwo, singlenamelist, threedots) ->
         let (tpe, args) = parse_base_type base_typetwo in
-        let new_args = map (fun e -> let typee, name, arg_list = parse_single_name e in typee, name) singlenamelist in
+        let new_args = map (fun e -> let typee, name, arg_list = parse_single_name e in ((match arg_list with Some args -> print_args args | None -> ()); typee, name)) singlenamelist in
         (tpe, match args with None -> Some new_args | Some last_args -> Some (last_args @ new_args))
 	| INT (_, _) -> ("int", None)
-    | PTR (base_typetwo) ->
+  | VOID -> ("void", None)
+  | PTR (base_typetwo) ->
         let (tpe, args) = parse_base_type base_typetwo in
-        ("("^tpe^"*)", args)
-    | _ -> failwith "not implemented"
+        begin match args with
+        | Some args_list -> (tpe ^ " (*look_at_right)(" ^ join_args_with_commas args_list ^ ")", None)
+        | None -> (tpe ^ "*", None)
+        end
+  | ARRAY (base_typetwo, size) ->
+    let (tpe, args) = parse_base_type base_typetwo in
+    (tpe ^ "[" ^ parse_expression size ^ "]", None)
+  | _ -> failwith "not implemented"
 
 and parse_name (name : name) : decl =
     let string_name, base_type, gnu_attrs, expression = name in
@@ -36,7 +57,12 @@ and parse_single_name (sname : single_name) : decl =
     match parse_base_type base_type with
     | (_, Some _) -> failwith "Impossible case: functions cannot return functions"
     | (tpe, None) -> parse_name name
-    
+
+and parse_expression (e: expression): string =
+  match e with
+  | NOTHING -> ""
+  | CONSTANT (CONST_INT cst) -> cst
+  | _ -> failwith "Not supported yet"
 
 (*
 let extract_type_name a =
@@ -75,13 +101,6 @@ let rec analyseCblock parsed_list : decl list = match parsed_list with
             (parse_single_name f) :: analyseCblock t
             end
     | _ -> print_string("other"); []
-
-let rec print_args (l: arg_list) : unit =
-    match l with
-    | (tpe, name)::t ->
-        print_endline ("\t" ^ tpe ^ " " ^ name);
-        print_args t
-    | [] -> ()
 
 let rec print_decl_list (l: decl list) : unit =
     match l with
