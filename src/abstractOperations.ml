@@ -8,11 +8,10 @@ let top (t : itype) (n : int) : dbm =
   | Float -> DbmFloat (Array.make_matrix (2*n) (2*n) max_float)
 
 (* The smallest element in the lattice representing an empty octagon *)
-(* All-zero seems not correct. TODO *)
 let bottom (t : itype) (n : int) : dbm =
   match t with
-  | Int -> DbmInt (Array.make_matrix (2*n) (2*n) 0)
-  | Float -> DbmFloat (Array.make_matrix (2*n) (2*n) 0.0)
+  | Int -> DbmInt (Array.make_matrix (2*n) (2*n) min_int)
+  | Float -> DbmFloat (Array.make_matrix (2*n) (2*n) min_float)
 
 (* Construct the modified var list (with double length) from an environment 
    Odd-index variables are the original values, 
@@ -49,6 +48,55 @@ let rec is_in_rec (l : var list) (d : dbm) (i : int) (j : int) : bool =
 let is_in (e : env) (d : dbm) : bool = 
   is_in_rec (modify_env e) d 0 0
 
+(* Check if a DBM is included in another DBM.
+   Basically, forall i, j, m_ij <= n_ij
+ *)
+let is_inside (m : dbm) (n : dbm) : bool =
+  match m, n with
+  | DbmInt d1, DbmInt d2 ->
+    if Array.length d1 <> Array.length d2 then false (*print_endline "matrix sizes do not match in is_inside!"*)
+    else let rec loop i =
+      if i = Array.length d1 then true
+      else if Array.for_all2 (fun a b -> a <= b) d1.(i) d2.(i) then loop (i+1)
+      else false in
+    loop 0
+  (*| DbmFloat d1, DbmFloat d2 -> print_endline "float case of is_inside is not implemented yet"; false*)
+  | _ -> print_endline "type error!"; false
+
+(* Join operation over two DBMs.
+   Basically, forall i, j, take max(m_ij, n_ij)
+ *)
+let join (m : dbm) (n : dbm) : dbm =
+  match m, n with
+  | DbmInt d1, DbmInt d2 ->
+    let len = Array.length d1 in
+    if len <> Array.length d2 then m (*print_endline "matrix sizes do not match in join!"*)
+    else
+      let res = Array.make_matrix len len max_int in
+      Array.iteri (fun i row -> 
+        Array.iteri (fun j ele -> 
+          res.(i).(j) <- max ele d2.(i).(j)
+        ) row) d1;
+      DbmInt res
+  | _ -> print_endline "type error!"; m
+
+(* Meet operation over two DBMs.
+   Basically, forall i, j, take max(m_ij, n_ij)
+ *)
+let meet (m : dbm) (n : dbm) : dbm =
+  match m, n with
+  | DbmInt d1, DbmInt d2 ->
+    let len = Array.length d1 in
+    if len <> Array.length d2 then m (*print_endline "matrix sizes do not match in meet!"*)
+    else
+      let res = Array.make_matrix len len max_int in
+      Array.iteri (fun i row -> 
+        Array.iteri (fun j ele -> 
+          res.(i).(j) <- min ele d2.(i).(j)
+        ) row) d1;
+      DbmInt res
+  | _ -> print_endline "type error!"; m
+
 (* Add a constraint on one variable into a DBM (in place).
    `i`: index of the variable (in the environment, i.e. not doubled)
    if `r` is GE, the constraint is Vi >= c.
@@ -61,16 +109,16 @@ let rec add_constraint_one (d : dbm) (i : int) (r : relation) c : unit =
   | DbmInt matrix -> 
     begin match r with
     | GE ->
-      let id1 = 2*i+1 in
-      let id2 = 2*i in
-      let c2 = -2*c in
+      let id1 = 2*i+1
+      and id2 = 2*i
+      and c2 = -2*c in
       if matrix.(id1).(id2) > (c2) then
         matrix.(id1).(id2) <- (c2)
       else ()
     | LE ->
-      let id1 = 2*i in
-      let id2 = 2*i+1 in
-      let c2 = 2*c in
+      let id1 = 2*i
+      and id2 = 2*i+1
+      and c2 = 2*c in
       if matrix.(id1).(id2) > (c2) then
         matrix.(id1).(id2) <- (c2)
       else ()
@@ -88,6 +136,7 @@ let rec add_constraint_one (d : dbm) (i : int) (r : relation) c : unit =
    The type of `c` should match the value type of the DBM.
  *)
 let rec add_constraint_two (d : dbm) (neg_i : bool) (i : int) (neg_j : bool) (j : int) (r : relation) c : unit =
+  assert (i <> j);
   match d with
   | DbmInt matrix -> 
     begin match r with
@@ -96,37 +145,37 @@ let rec add_constraint_two (d : dbm) (neg_i : bool) (i : int) (neg_j : bool) (j 
     | LE ->
       begin match neg_i, neg_j with
       | false, false -> (* Vi + Vj <= c *)
-        (let id1 = 2*j in
-        let id2 = 2*i+1 in
+        (let id1 = 2*j
+        and id2 = 2*i+1 in
         if matrix.(id1).(id2) > c then
           matrix.(id1).(id2) <- c
         else ());
-        (let id1 = 2*i in
-        let id2 = 2*j+1 in
+        (let id1 = 2*i
+        and id2 = 2*j+1 in
         if matrix.(id1).(id2) > c then
           matrix.(id1).(id2) <- c
         else ())
       | false, true -> (* Vi - Vj <= c *)
-        (let id1 = 2*j+1 in
-        let id2 = 2*i+1 in
+        (let id1 = 2*j+1
+        and id2 = 2*i+1 in
         if matrix.(id1).(id2) > c then
           matrix.(id1).(id2) <- c
         else ());
-        (let id1 = 2*i in
-        let id2 = 2*j in
+        (let id1 = 2*i
+        and id2 = 2*j in
         if matrix.(id1).(id2) > c then
           matrix.(id1).(id2) <- c
         else ())
       | true, false -> (* -Vi + Vj <= c --> Vj - Vi <= c *)
         add_constraint_two d false j true i LE c
       | true, true -> (* -Vi - Vj <= c *)
-        (let id1 = 2*j+1 in
-        let id2 = 2*i in
+        (let id1 = 2*j+1
+        and id2 = 2*i in
         if matrix.(id1).(id2) > c then
           matrix.(id1).(id2) <- c
         else ());
-        (let id1 = 2*i+1 in
-        let id2 = 2*j in
+        (let id1 = 2*i+1
+        and id2 = 2*j in
         if matrix.(id1).(id2) > c then
           matrix.(id1).(id2) <- c
         else ())
