@@ -1,5 +1,8 @@
 (* Define the data structures *)
 
+(* Types of relational constraints *)
+type relation = GE | LE | EQ
+
 (** The real domain: value assignments to all variables **)
 (* A C program variable *)
 type var = VarInt of int | VarFloat of float | VarBool of bool (* other types? *)
