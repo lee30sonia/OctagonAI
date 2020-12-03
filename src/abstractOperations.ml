@@ -96,25 +96,40 @@ let rec add_constraint_two (d : dbm) (neg_i : bool) (i : int) (neg_j : bool) (j 
     | LE ->
       begin match neg_i, neg_j with
       | false, false -> (* Vi + Vj <= c *)
-        let id1 = 2*j in
+        (let id1 = 2*j in
         let id2 = 2*i+1 in
         if matrix.(id1).(id2) > c then
           matrix.(id1).(id2) <- c
-        else ()
+        else ());
+        (let id1 = 2*i in
+        let id2 = 2*j+1 in
+        if matrix.(id1).(id2) > c then
+          matrix.(id1).(id2) <- c
+        else ())
       | false, true -> (* Vi - Vj <= c *)
-        let id1 = 2*j+1 in
+        (let id1 = 2*j+1 in
         let id2 = 2*i+1 in
         if matrix.(id1).(id2) > c then
           matrix.(id1).(id2) <- c
-        else ()
+        else ());
+        (let id1 = 2*i in
+        let id2 = 2*j in
+        if matrix.(id1).(id2) > c then
+          matrix.(id1).(id2) <- c
+        else ())
       | true, false -> (* -Vi + Vj <= c --> Vj - Vi <= c *)
         add_constraint_two d false j true i LE c
       | true, true -> (* -Vi - Vj <= c *)
-        let id1 = 2*j+1 in
+        (let id1 = 2*j+1 in
         let id2 = 2*i in
         if matrix.(id1).(id2) > c then
           matrix.(id1).(id2) <- c
-        else ()
+        else ());
+        (let id1 = 2*i+1 in
+        let id2 = 2*j in
+        if matrix.(id1).(id2) > c then
+          matrix.(id1).(id2) <- c
+        else ())
       end
     | EQ ->
       add_constraint_two d neg_i i neg_j j GE c;
