@@ -5,13 +5,13 @@ open Types
 let top (t : itype) (n : int) : dbm =
   match t with
   | Int -> DbmInt (Array.make_matrix (2*n) (2*n) max_int)
-  | Float -> DbmFloat (Array.make_matrix (2*n) (2*n) max_float)
+  | Float -> DbmFloat (Array.make_matrix (2*n) (2*n) infinity)
 
 (* The smallest element in the lattice representing an empty octagon *)
 let bottom (t : itype) (n : int) : dbm =
   match t with
   | Int -> DbmInt (Array.make_matrix (2*n) (2*n) min_int)
-  | Float -> DbmFloat (Array.make_matrix (2*n) (2*n) min_float)
+  | Float -> DbmFloat (Array.make_matrix (2*n) (2*n) neg_infinity)
 
 (* Construct the modified var list (with double length) from an environment 
    Odd-index variables are the original values, 
@@ -185,4 +185,5 @@ let rec add_constraint_two (d : dbm) (neg_i : bool) (i : int) (neg_j : bool) (j 
       add_constraint_two d neg_i i neg_j j LE c;
     end
   | _ -> print_endline "float case of add_constraint_two is not implemented yet"
+
 
