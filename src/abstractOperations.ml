@@ -5,7 +5,7 @@ open Types
 let top (n : int) : dbm = Array.make_matrix (2*n) (2*n) max_int
 
 (* The smallest element in the lattice representing an empty octagon *)
-let bottom(n : int) : dbm = Array.make_matrix (2*n) (2*n) min_int
+let bottom (n : int) : dbm = Array.make_matrix (2*n) (2*n) min_int
 
 (* Construct the modified var list (with double length) from an environment 
    Odd-index variables are the original values, 
