@@ -4,7 +4,7 @@ DUNE=dune
 all: build
 
 build:
-	$(DUNE) build
+	$(DUNE) build --profile release
 
 install:
 	$(DUNE) install

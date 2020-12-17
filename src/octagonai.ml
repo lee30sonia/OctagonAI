@@ -6,23 +6,21 @@ open Closure
 (* Followings are just my testing code. Feel free to remove them. *)
 (* Number of program variables *)
 let n = 2
-(* Value domain *)
-let domain = Int
 (* Program variables *)
-let x1 = VarInt 1
-let x2 = VarInt 2
+let x1 = 1
+let x2 = 2
 (* The environment (current program state) *)
 let e = Env [x1 ; x2]
 
 (* The greatest DBM *)
-let t = top domain n
+let t = top n
 (* The smallest DBM *)
-let b = bottom domain n
+let b = bottom n
 
 let _ = 
   (* Create two working matrices, strating from top and adding constraints to them *)
-  let m1 = top domain n 
-  and m2 = top domain n in
+  let m1 = top n 
+  and m2 = top n in
   (* Add a constraint of x1 >= 0 *)
   add_constraint_one m1 0 GE 0;
   add_constraint_one m2 0 GE 0;
@@ -58,7 +56,7 @@ let _ =
 let _ = 
   print_endline "\nTesting Closure Algorithms\n";
 
-  let m1 = top domain 3 in
+  let m1 = top 3 in
   add_constraint_two m1 false 1 true 0 LE 5;
   add_constraint_two m1 false 0 true 1 LE (-1);
   add_constraint_two m1 false 2 true 0 LE 3;
@@ -82,7 +80,7 @@ let _ =
   print_endline "\nTight closure:";
   print_dbm tight_closure_m1;
 
-  let m2 = top domain 2 in
+  let m2 = top 2 in
 
   add_constraint_two m2 false 0 false 1 LE 4;
   add_constraint_two m2 false 1 true 0 LE 3;
@@ -106,7 +104,7 @@ let _ =
   print_endline "\nTight closure:";
   print_dbm tight_closure_m2;
 
-  let m3 = top domain 2 in
+  let m3 = top 2 in
 
   add_constraint_one m3 0 LE 1;
   add_constraint_one m3 0 GE (-1);

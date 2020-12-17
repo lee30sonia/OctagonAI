@@ -10,20 +10,9 @@ let print_2d_int_array arr =
     )
 ;;
 
-(* Print a 2d floating point matrix *)
-let print_2d_float_array arr = 
-  arr |> Array.iter 
-    (fun xs -> 
-       (xs |> Array.iter (fun x -> Format.printf "%8.4f "  x ) ); 
-       Format.printf "\n"
-    )
-;;
-
 (* Print a dbm *)
 let print_dbm d =
-  match d with
-  | DbmInt m -> print_2d_int_array m 
-  | DbmFloat m -> print_2d_float_array m
+  print_2d_int_array m 
 ;;
 
 (* Add two integers without overflow assuming max_int = infinity *)
@@ -99,26 +88,16 @@ let update_in_place arr n f =
 
 (* Shortest path closure *)
 let shortest_path_closure d : dbm = 
-  match d with 
-  | DbmInt m->
-    let n = num_env_vars_of_matrix m in
-    let res = copy_of_2d_array(m) in
+  let n = num_env_vars_of_matrix d in
+  let res = copy_of_2d_array d in
 
-    for k = 0 to 2*n - 1 do
-      update_in_place res (2*n) (fun arr i j ->  min arr.(i).(j) (add_int arr.(i).(k) arr.(k).(j)));
-    done;
+  for k = 0 to 2*n - 1 do
+    update_in_place res (2*n) (fun arr i j ->  min arr.(i).(j) (add_int arr.(i).(k) arr.(k).(j)));
+  done;
 
-    if exists_diagonal_entry res (fun x -> x < 0) then bottom Int n else (update_diagonal_elems res 0; DbmInt res);
-
-  | DbmFloat m ->  
-    let n = num_env_vars_of_matrix m in 
-    let res = copy_of_2d_array(m) in
-
-    for k = 0 to (2*n - 1) do
-      update_in_place res (2*n) (fun arr i j ->  min arr.(i).(j) (arr.(i).(k) +. arr.(k).(j)));
-    done;
-
-    if exists_diagonal_entry res (fun x -> x < 0.) then bottom Float n else (update_diagonal_elems res 0.; DbmFloat res)
+  if exists_diagonal_entry res (fun x -> x < 0)
+  then bottom n
+  else (update_diagonal_elems res 0; res)
 ;;
 
 let entry_update_c_int k arr i j = 
@@ -131,55 +110,29 @@ let entry_update_c_int k arr i j =
   ]
 ;;
 
-let entry_update_c_float k arr i j = 
-  min_of [ 
-    arr.(i).(j); 
-    Float.add arr.(i).(2*k) arr.(2*k).(j); 
-    Float.add arr.(i).(2*k+1) arr.(2*k+1).(j);
-    Float.add arr.(i).(2*k) (Float.add arr.(2*k).(2*k+1)  arr.(2*k+1).(j));
-    Float.add arr.(i).(2*k+1) (Float.add arr.(2*k+1).(2*k)  arr.(2*k).(j));
-  ]
-;;
-
 let entry_update_s_int arr i j = 
   min arr.(i).(j) (div2_int (add_int arr.(i).(bar i) arr.(bar j).(j)))
 ;;
 
-let entry_update_s_float arr i j = 
-  min arr.(i).(j) ((Float.add arr.(i).(bar i)  arr.(bar j).(j)) /. 2.)
-;;
-
 (* Strong closure O(n^3) running time *)
 let strong_closure d : dbm =
-  match d with 
-  | DbmInt m ->
-    let n = num_env_vars_of_matrix m in
-    let res = copy_of_2d_array(m) in
+  let n = num_env_vars_of_matrix d in
+  let res = copy_of_2d_array d in
 
-    for k = 0 to n - 1 do
-      update_in_place res (2*n) (entry_update_c_int k);
-      update_in_place res (2*n) entry_update_s_int;    
-    done;
+  for k = 0 to n - 1 do
+    update_in_place res (2*n) (entry_update_c_int k);
+    update_in_place res (2*n) entry_update_s_int;    
+  done;
 
-    if exists_diagonal_entry res (fun x -> x < 0) then bottom Int n else (update_diagonal_elems res 0; DbmInt res)
-
-  | DbmFloat m ->  
-    let n = num_env_vars_of_matrix m in
-    let res = copy_of_2d_array(m) in
-
-    for k = 0 to n - 1 do
-      update_in_place res (2*n) (entry_update_c_float k);
-      update_in_place res (2*n) entry_update_s_float;
-    done;
-
-    if exists_diagonal_entry res (fun x -> x < 0.) then bottom Float n else (update_diagonal_elems res 0.; DbmFloat res)
+  if exists_diagonal_entry res (fun x -> x < 0)
+  then bottom n
+  else (update_diagonal_elems res 0; res)
+;;
 
 (* Strong closure incremental (single updated variable) *)
 let inc_strong_closure_with_updated_env_vars d updated_env_vars = 
-  match d with 
-  | DbmInt m ->
-    let n = num_env_vars_of_matrix m in
-    let res = copy_of_2d_array(m) in
+    let n = num_env_vars_of_matrix d in
+    let res = copy_of_2d_array d in
 
     (* skip updated_env_var_ind and process the rest *)
     for k = 0 to n - 1 do
@@ -216,48 +169,7 @@ let inc_strong_closure_with_updated_env_vars d updated_env_vars =
         update_in_place res (2*n) entry_update_s_int;
       );
 
-    if exists_diagonal_entry res (fun x -> x < 0) then bottom Int n else (update_diagonal_elems res 0; DbmInt res)
-
-  | DbmFloat m -> 
-    let n = num_env_vars_of_matrix m in
-    let res = copy_of_2d_array(m) in
-
-    (* skip updated_env_var_ind and process the rest *)
-    for k = 0 to n - 1 do
-      if not (List.mem k updated_env_vars) then (
-        (* c pass *)
-        updated_env_vars |> List.iter (fun i ->
-            for j = 0 to (2*n - 1) do 
-              res.(i).(j) <- entry_update_c_float k res i j;
-            done;
-          );
-        for i = 0 to (2*n - 1) do 
-          updated_env_vars |> List.iter (fun j -> 
-              res.(i).(j) <- entry_update_c_float k res i j;
-            );
-        done;
-
-        (* s pass *)
-        updated_env_vars |> List.iter (fun i ->
-            for j = 0 to (2*n - 1) do 
-              res.(i).(j) <- entry_update_s_float res i j;
-            done;
-          );
-        for i = 0 to (2*n - 1) do 
-          updated_env_vars |> List.iter (fun j -> 
-              res.(i).(j) <- entry_update_s_float  res i j;
-            );
-        done;
-      );
-    done;
-
-    (* Process skipped entries *)
-    updated_env_vars |> List.iter (fun k ->
-        update_in_place res (2*n) (entry_update_c_float k);
-        update_in_place res (2*n) entry_update_s_float;
-      );
-
-    if exists_diagonal_entry res (fun x -> x < 0.) then bottom Float n else (update_diagonal_elems res 0.; DbmFloat res)
+    if exists_diagonal_entry res (fun x -> x < 0) then bottom n else (update_diagonal_elems res 0; res)
 ;;
 
 (* List of indices from - to n - 1) *)
@@ -267,18 +179,10 @@ let rec range n =
 
 (* Strong closure incremental (single updated constraint) *)
 let inc_strong_closure_with_updated_constraints d updated_constraints = 
-  match d with 
-  | DbmInt m ->
-    let n = num_env_vars_of_matrix m in
-    let updated_env_vars = range n |> List.filter (fun i -> 
-        updated_constraints |> List.exists (fun (a, b) -> a/2 = i || b/2 = i)) in 
-    inc_strong_closure_with_updated_env_vars d updated_env_vars
-
-  | DbmFloat m -> 
-    let n = num_env_vars_of_matrix m in
-    let updated_env_vars = range n |> List.filter (fun i -> 
-        updated_constraints |> List.exists (fun (a, b) -> a/2 = i || b/2 = i)) in 
-    inc_strong_closure_with_updated_env_vars d updated_env_vars
+  let n = num_env_vars_of_matrix d in
+  let updated_env_vars = range n |> List.filter (fun i -> 
+      updated_constraints |> List.exists (fun (a, b) -> a/2 = i || b/2 = i)) in 
+  inc_strong_closure_with_updated_env_vars d updated_env_vars
 ;;
 
 (* Tight Closures - Only Needed for Integral DBMs whene we can tighten certain constraints using the integrality *)
@@ -316,33 +220,22 @@ let inc_tight_closure_in_place m (i0, j0) =
 let tight_closure d =
   let d' = strong_closure d in
 
-  match d' with
-  | DbmInt m -> 
-    let n = num_env_vars_of_matrix m in
-    let d_new = top Int n in
-    (
-      match d_new with
-      | DbmInt res ->
-        for i = 0 to (2*n - 1) do 
-          for j = 0 to (2*n - 1) do 
-            res.(i).(j) <- m.(i).(j);
-            res.(bar j).(bar i) <- m.(bar j).(bar i);
-            inc_tight_closure_in_place res (i, j);
-          done;
-        done;
+  let n = num_env_vars_of_matrix d' in
+  let d_new = top n in
+  for i = 0 to (2*n - 1) do 
+    for j = 0 to (2*n - 1) do 
+      d_new.(i).(j) <- d'.(i).(j);
+      d_new.(bar j).(bar i) <- d'.(bar j).(bar i);
+      inc_tight_closure_in_place d_new (i, j);
+    done;
+  done;
 
-        if exists_diagonal_entry res (fun x -> x < 0) then bottom Int n else (update_diagonal_elems res 0; DbmInt res)
-
-      | DbmFloat _ -> raise (Failure "unknown error")
-    );
-
-  | DbmFloat _ -> raise (Invalid_argument "tight closure is for integral DBMs") 
+  if exists_diagonal_entry d_new (fun x -> x < 0)
+  then bottom n
+  else (update_diagonal_elems d_new 0; d_new)
 ;;
 
 (* Compute the clousre - for Integral DBMs this would be the tight closure, and for Float DBMs this would be the strong closure *)
-let closure d = 
-  match d with 
-  | DbmInt _ -> tight_closure d 
-  | DbmFloat _ -> strong_closure d
+let closure d = tight_closure d 
 ;;
 
