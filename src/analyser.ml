@@ -1,6 +1,6 @@
 (* File that analyses the code *)
 
-let rec analyzeFunction (name: single_name) (b: block) =
+(*let rec analyzeFunction (name: single_name) (b: block) =
   ()
 
 and analyzeBlock (defs, stmts: block) =
@@ -50,3 +50,4 @@ and analyzeExpression (env: env) (state: dbm) (expr: expression): dbm =
   end
 
 let notSupported () = failwith "Not supported"
+*)
