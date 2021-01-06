@@ -190,3 +190,42 @@ let tight_closure (d: dbm): dbm =
     | Bot -> Bot
     | DBM result when exists_diagonal_entry result (fun x -> x #< Z.zero) -> Bot
     | DBM result -> (update_diagonal_elems result Z.zero; DBM result)
+
+(* Tight closure for integers O(n^3) running time *)
+let tight_closure_optimized (d: dbm) =
+  match d with 
+    | Bot -> Bot
+    | DBM m ->
+  let n = num_env_vars_of_matrix m in
+  let d_new = copy_of_2d_array m in
+
+  (* Make d_new coherent *)
+  for i = 0 to (2*n - 1) do 
+    for j = 0 to (2*n - 1) do 
+      d_new.(i).(j) <- Z.min d_new.(i).(j) d_new.(bar j).(bar i);
+    done;
+  done;
+
+  for k = 0 to 2*n - 1 do
+    for i = 0 to 2*n - 1 do 
+      for j = 0 to 2*n - 1 do
+        d_new.(i).(j) <- Z.min d_new.(i).(j) (d_new.(i).(k) #+ d_new.(k).(j));
+        d_new.(bar j).(bar i) <- d_new.(i).(j);
+      done;      
+    done;  
+  done;
+  
+  for i = 0 to 2*n - 1 do
+    for j = 0 to 2*n - 1 do
+      d_new.(i).(j) <- Z.min d_new.(i).(j) ((d_new.(i).(bar i) #/ two) #+ (d_new.(bar j).(j) #/ two));
+      d_new.(bar j).(bar i) <- d_new.(i).(j);
+    done;
+  done;  
+
+  if exists_diagonal_entry d_new (fun x -> x #< Z.zero)
+  then Bot 
+  else (update_diagonal_elems d_new Z.zero; DBM d_new)
+;;
+
+(* Compute the clousre - for Integral DBMs this would be the tight closure, and for Float DBMs this would be the strong closure *)
+let closure d = tight_closure_optimized d 

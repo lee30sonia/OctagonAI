@@ -50,8 +50,6 @@ let _ =
   if (is_in e m3) then print_endline "true(O)" else print_endline "false(X)";
   if (is_in e m4) then print_endline "true(X)" else print_endline "false(O)"
 
-
-
 (* Testing the closure operation *)
 let _ = 
   print_endline "\nTesting Closure Algorithms\n";
@@ -81,6 +79,11 @@ let _ =
   print_dbm tight_closure_m1;
   assert (is_coherent_dbm_tightly_closed tight_closure_m1);
 
+  let tight_closure_opt_m1 = tight_closure_optimized m1 in
+  print_endline "\nOptimized tight closure:";
+  print_dbm tight_closure_opt_m1;
+  assert (is_coherent_dbm_tightly_closed tight_closure_opt_m1);
+
   let m2 = top 2 in
 
   add_constraint_two m2 false 0 false 1 LE (4 |> Z.of_int);
@@ -106,6 +109,11 @@ let _ =
   print_dbm tight_closure_m2;
   assert (is_coherent_dbm_tightly_closed tight_closure_m2);
 
+  let tight_closure_opt_m2 = tight_closure_optimized m2 in
+  print_endline "\nOptimized tight closure:";
+  print_dbm tight_closure_opt_m2;
+  assert (is_coherent_dbm_tightly_closed tight_closure_opt_m2);
+
   let m3 = top 2 in
 
   add_constraint_one m3 0 LE (1 |> Z.of_int);
@@ -128,4 +136,85 @@ let _ =
   let tight_closure_m3 = tight_closure m3 in
   print_endline "\nTight closure:";
   print_dbm tight_closure_m3;
-  assert (is_coherent_dbm_tightly_closed tight_closure_m3)
+  assert (is_coherent_dbm_tightly_closed tight_closure_m3);
+
+  let tight_closure_opt_m3 = tight_closure_optimized m3 in
+  print_endline "\nOptimized tight closure:";
+  print_dbm tight_closure_opt_m3;
+  assert (is_coherent_dbm_tightly_closed tight_closure_opt_m3)
+
+
+let time f =
+  let t = Unix.gettimeofday () in
+  let res = f () in
+  Printf.printf "\nExecution time: %f seconds\n"
+                (Unix.gettimeofday () -. t);
+  res
+
+(* Testing the closure operations timing *)
+let _ = 
+  print_endline "\nTesting Closure Algorithms Timing\n";
+
+  let t25 = top  25 in
+  let t50 = top  50 in
+  let t100 = top  100 in
+  let t200 = top  200 in
+
+  print_endline "\nShortest Path Closure\n\n";
+  
+  let _ = time (fun() -> (shortest_path_closure t25)) in
+  print_endline "done t25";
+
+  let _ = time (fun() -> (shortest_path_closure t50)) in 
+  print_endline "done t50";
+
+  let _ = time (fun() -> (shortest_path_closure t100)) in 
+  print_endline "done t100";
+
+  let _ = time (fun() -> (shortest_path_closure t200)) in 
+  print_endline "done t200";
+
+  print_endline "\n\nStrong Closure\n\n";
+
+  let _ = time (fun() -> (strong_closure t25)) in
+  print_endline "done t25";
+
+  let _ = time (fun() -> (strong_closure t50)) in 
+  print_endline "done t50";
+
+  let _ = time (fun() -> (strong_closure t100)) in 
+  print_endline "done t100";
+
+  let _ = time (fun() -> (strong_closure t200)) in 
+  print_endline "done t200";
+
+
+  print_endline "\n\nOptimized Tight Closure\n\n";
+
+  let _ = time (fun() -> (tight_closure_optimized t25)) in
+  print_endline "done t25";
+
+  let _ = time (fun() -> (tight_closure_optimized t50)) in 
+  print_endline "done t50";
+
+  let _ = time (fun() -> (tight_closure_optimized t100)) in 
+  print_endline "done t100";
+
+  let _ = time (fun() -> (tight_closure_optimized t200)) in 
+  print_endline "done t200";
+
+
+  print_endline "\n\nTight Closure\n\n";
+
+  let _ = time (fun() -> (tight_closure t25)) in
+  print_endline "done t25";
+
+  let _ = time (fun() -> (tight_closure t50)) in 
+  print_endline "done t50";
+
+  let _ = time (fun() -> (tight_closure t100)) in 
+  print_endline "done t100";
+
+  let _ = time (fun() -> (tight_closure t200)) in 
+  print_endline "done t200"
+
