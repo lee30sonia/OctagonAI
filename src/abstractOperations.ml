@@ -3,7 +3,7 @@ open Types
 open Utils
 
 (* The greatest element representing the whole space *)
-let top (n : int) : dbm = DBM (Array.make_matrix (2*n) (2*n) (Z.of_int32 Int32.max_int) #* two)
+let top (n : int) : dbm = DBM (Array.make_matrix (2*n) (2*n) ((Z.of_int32 Int32.max_int) #* (Z.of_int32 Int32.max_int)) #* two)
 
 (* The smallest element in the lattice representing an empty octagon *)
 let bottom (n : int) : dbm = Bot
