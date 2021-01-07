@@ -30,7 +30,7 @@ let rec get_upper_bound m cv =
       #+ (get_upper_bound m tl)
 
 let rec negate_coeff cv =
-  match cv with [] -> [] | (c, v) :: tl -> (types_neg c, v) :: negate_coeff cv
+  match cv with [] -> [] | (c, v) :: tl -> (types_neg c, v) :: negate_coeff tl 
 
 (*
 Returns a new dbm m' given the current dbm m and an assignment of the form 
