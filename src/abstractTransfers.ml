@@ -37,10 +37,6 @@ let dbm_after_assignment_direct (m : dbm) (i0 : int) (c0 : integer)
       let pi2 = 2 * i2 in
       let ni2 = bar pi2 in
 
-    
-       (* Format.printf "get_best_bound %ld\n" (Z.to_int32 (get_best_bound d (c1, i1) (c2, i2))); 
-               Format.printf "get_best_bound %ld\n" (Z.to_int32 (get_best_bound d (-c1, i1) (-c2, i2))); *)
-
       (* Update assigned variable *)
       d'.(pi0).(ni0) <- two #* (c0 #+ (get_best_bound d (c1, i1) (c2, i2)));
       d'.(ni0).(pi0) <- two #* ((types_neg c0) #+ (get_best_bound d (-c1, i1) (-c2, i2)));
