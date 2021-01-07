@@ -92,8 +92,8 @@ and analyzeExpression (env: env) (state: dbm) (expr: expression): dbm =
   | _ -> notSupported ()
   end
 
-and analyzeConstant (cst: constant): Z.t =
+and analyzeConstant (cst: constant): integer =
   begin match cst with
-  | CONST_INT nb -> Z.of_string nb
+  | CONST_INT nb -> types_of_string nb
   | _ -> notSupported ()
   end
