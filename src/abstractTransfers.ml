@@ -21,7 +21,7 @@ let get_best_bound d ((c1, i1) : int * int) ((c2, i2) : int * int) =
 
 (* 
 Returns a new dbm m' given the current dbm m and an assignment of the form 
-v_i0 <- c1 * v_i1 + c2 *v_i2 + c0 where c1 and c2 are from the set {-1, 0, 1}
+v_i0 <- c1 * v_i1 + c2 * v_i2 + c0 where c1 and c2 are from the set {-1, 0, 1}
 *)
 let dbm_after_assignment_direct (m : dbm) (i0 : int) (c0 : integer)
     ((c1, i1) : int * int) ((c2, i2) : int * int) =
@@ -39,28 +39,25 @@ let dbm_after_assignment_direct (m : dbm) (i0 : int) (c0 : integer)
 
       (* Update assigned variable *)
       d'.(pi0).(ni0) <- two #* (c0 #+ (get_best_bound d (c1, i1) (c2, i2)));
-      d'.(ni0).(pi0) <- two #* ((types_neg c0) #+ (get_best_bound d (-c1, i1) (-c2, i2)));
+      d'.(ni0).(pi0) <-
+        two #* ((types_neg c0) #+ (get_best_bound d (-c1, i1) (-c2, i2)));
 
       (* Update constraints involving the updated variable *)
       for i = 0 to (2 * n) - 1 do
         if i != pi0 && i != ni0 then (
-        d'.(pi0).(i) <- d'.(pi0).(ni0) #/ two #+ (d'.(bar i).(i) #/ two);
-        d'.(bar i).(ni0) <- d'.(pi0).(i))
+          d'.(pi0).(i) <- d'.(pi0).(ni0) #/ two #+ (d'.(bar i).(i) #/ two);
+          d'.(bar i).(ni0) <- d'.(pi0).(i))
       done;
       for i = 0 to (2 * n) - 1 do
         if i != pi0 && i != ni0 then (
-        d'.(i).(pi0) <- d'.(i).(bar i) #/ two #+ (d'.(ni0).(pi0) #/ two);
-        d'.(ni0).(bar i) <- d'.(i).(pi0))
-      done; 
+          d'.(i).(pi0) <- d'.(i).(bar i) #/ two #+ (d'.(ni0).(pi0) #/ two);
+          d'.(ni0).(bar i) <- d'.(i).(pi0))
+      done;
 
       (* Might be able to strengthen constraints involving v_i1 and v_i2 *)
       if i0 != i1 && c1 == 1 then (
         d'.(pi0).(pi1) <-
-          min_of
-            [
-              d'.(pi0).(pi1);
-              c0 #+ (get_best_bound d (0, 0) (c2, i2));
-            ];
+          min_of [ d'.(pi0).(pi1); c0 #+ (get_best_bound d (0, 0) (c2, i2)) ];
         d'.(pi1).(pi0) <-
           min_of
             [
@@ -72,11 +69,7 @@ let dbm_after_assignment_direct (m : dbm) (i0 : int) (c0 : integer)
 
       if i0 != i1 && c1 == -1 then (
         d'.(pi0).(ni1) <-
-          min_of
-            [
-              d'.(pi0).(ni1);
-              c0 #+ (get_best_bound d (0, 0) (c2, i2));
-            ];
+          min_of [ d'.(pi0).(ni1); c0 #+ (get_best_bound d (0, 0) (c2, i2)) ];
         d'.(ni1).(pi0) <-
           min_of
             [
@@ -85,14 +78,10 @@ let dbm_after_assignment_direct (m : dbm) (i0 : int) (c0 : integer)
             ];
         d'.(bar ni1).(bar pi0) <- d'.(pi0).(ni1);
         d'.(bar pi0).(bar ni1) <- d'.(ni1).(pi0));
-      
+
       if i0 != i2 && c2 == 1 then (
         d'.(pi0).(pi2) <-
-          min_of
-            [
-              d'.(pi0).(pi2);
-              c0 #+ (get_best_bound d (0, 0) (c1, i1));
-            ];
+          min_of [ d'.(pi0).(pi2); c0 #+ (get_best_bound d (0, 0) (c1, i1)) ];
         d'.(pi2).(pi0) <-
           min_of
             [
@@ -104,11 +93,7 @@ let dbm_after_assignment_direct (m : dbm) (i0 : int) (c0 : integer)
 
       if i0 != i2 && c2 == -1 then (
         d'.(pi0).(ni2) <-
-          min_of
-            [
-              d'.(pi0).(ni2);
-              c0 #+ (get_best_bound d (0, 0) (c1, i1));
-            ];
+          min_of [ d'.(pi0).(ni2); c0 #+ (get_best_bound d (0, 0) (c1, i1)) ];
         d'.(ni2).(pi0) <-
           min_of
             [
@@ -116,6 +101,39 @@ let dbm_after_assignment_direct (m : dbm) (i0 : int) (c0 : integer)
               (types_neg c0) #+ (get_best_bound d (0, 0) (-c1, i1));
             ];
         d'.(bar ni2).(bar pi0) <- d'.(pi0).(ni2);
-        d'.(bar pi0).(bar ni2) <- d'.(ni2).(pi0)); 
+        d'.(bar pi0).(bar ni2) <- d'.(ni2).(pi0));
 
       DBM d'
+
+(* Implements standard widening where m is tha dbm at the beginning of a loop 
+(after initializing loop variable) and n is the dbm at the beginning of the 
+second iteration (after loop condition) *)
+let standard_widening (m : dbm) (n : dbm) =
+  match (m, n) with
+  | _, Bot -> Bot
+  | Bot, _ -> Bot
+  | DBM md, DBM nd ->
+      let k = num_env_vars_of_matrix md in
+      let res = copy_of_2d_array md in
+      for i = 0 to (2 * k) - 1 do
+        for j = 0 to (2 * k) - 1 do
+          res.(i).(j) <-
+            (if md.(i).(j) #>= nd.(i).(j) then md.(i).(j) else Infty false)
+        done
+      done;
+      DBM res
+
+let standard_narrowing (m : dbm) (n : dbm) =
+  match (m, n) with
+  | _, Bot -> Bot
+  | Bot, _ -> Bot
+  | DBM md, DBM nd ->
+      let k = num_env_vars_of_matrix md in
+      let res = copy_of_2d_array md in
+      for i = 0 to (2 * k) - 1 do
+        for j = 0 to (2 * k) - 1 do
+          res.(i).(j) <-
+            (if md.(i).(j) #= (Infty false) then nd.(i).(j) else md.(i).(j))
+        done
+      done;
+      DBM res
