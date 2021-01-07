@@ -9,10 +9,11 @@ open Cabs
 open Analyser
 
 
-let start_parse () =
+let start_parse filename =
   match Frontc.parse_file "./test.c" stdout with
   | Frontc.PARSING_ERROR -> failwith "Impossible to parse the file"
   | Frontc.PARSING_OK definitions -> analyzeFunctions definitions
+
 
 (* Followings are just my testing code. Feel free to remove them. *)
 (* Number of program variables *)
@@ -32,7 +33,7 @@ let t = top n
 (* The smallest DBM *)
 let b = bottom n
 
-let _ =
+let test_dbm () =
   (* Create two working matrices, strating from top and adding constraints to them *)
   let m1 = top n and m2 = top n in
   (* Add a constraint of x1 >= 0 *)
@@ -64,8 +65,7 @@ let _ =
   if is_in e m4 then print_endline "true(X)" else print_endline "false(O)"
 
 (* Testing the closure operation *)
-let _ =
-  start_parse ();
+let test_closure () =
   print_endline "\nTesting Closure Algorithms\n";
 
   let m1 = top 3 in
@@ -158,7 +158,7 @@ let _ =
   assert (is_coherent_dbm_tightly_closed tight_closure_opt_m3)
 
 (* Testing abstract transfer functions *)
-let _ =
+let transfer_functions_test () =
   print_endline "\nTesting Abstract Transfers\n";
 
   print_endline "before any assingment";
@@ -188,8 +188,8 @@ let time f =
   res
 
 (* Testing the closure operations timing *)
-(*
-let time_closures =
+
+let time_closures () =
   print_endline "\nTesting Closure Algorithms Timing\n";
 
   let t25 = top 25 in
@@ -245,7 +245,7 @@ let time_closures =
   print_endline "done t25";
 
   let _ = time (fun () -> tight_closure t50) in
-  print_endline "done t50";
+  print_endline "done t50"
 
   (*let _ = time (fun() -> (tight_closure t100)) in 
   print_endline "done t100";
@@ -254,5 +254,22 @@ let time_closures =
   print_endline "done t200";*)
   
 
+let tests_enabled = ref false
 
-*)
+
+let main () =
+  let speclist = [("--tests", Arg.Set tests_enabled, "Run the tests on the implementation")] in
+  let usage_msg = "OctagonAI is a program made during the course Formal Verification at the EPFL and that experiments using abstract interpretation on C code using the Octagon abstract domain." in
+  Arg.parse speclist print_endline usage_msg;
+  let argc = Array.length Sys.argv in
+  if !tests_enabled
+  then begin
+    print_endline "You've enter no filename so some tests of the implementation will be run...\n";
+    print_endline "Test of DBM implementation:";
+    test_dbm ();
+    test_closure ();
+    transfer_functions_test ();
+    time_closures ()
+  end else if argc > 1 then
+    start_parse Sys.argv.(argc - 1)
+let _ = main ()
