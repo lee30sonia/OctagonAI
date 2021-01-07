@@ -19,6 +19,50 @@ let get_best_bound d ((c1, i1) : int * int) ((c2, i2) : int * int) =
   | 1, 1 -> d.(pi1).(ni2)
   | _ -> raise (Invalid_argument "c1, c2 must be from {-1, 0, 1}")
 
+let rec get_upper_bound m cv =
+  match cv with
+  | [] -> Number Z.zero
+  | (c, v) :: tl ->
+      let pi = 2 * v in
+      let ni = bar pi in
+      (if c #>= (Number Z.zero) then c #* (m.(pi).(ni) #/ two)
+      else (types_neg c) #* (m.(ni).(pi) #/ two))
+      #+ (get_upper_bound m tl)
+
+let rec negate_coeff cv =
+  match cv with [] -> [] | (c, v) :: tl -> (types_neg c, v) :: negate_coeff cv
+
+(*
+Returns a new dbm m' given the current dbm m and an assignment of the form 
+v_i0 <- c0 + cv[0][0] * v_cv[0][1] + cv[1][0] * v_cv[1][1] + ... 
+*)
+let dbm_after_general_assignment (m : dbm) (i0 : int) (c0 : integer) cv =
+  match m with
+  | Bot -> Bot
+  | DBM d ->
+      let d' = copy_of_2d_array d in
+      let n = num_env_vars_of_matrix d' in
+      let pi0 = 2 * i0 in
+      let ni0 = bar pi0 in
+
+      (* Update assigned variable *)
+      d'.(pi0).(ni0) <- two #* (c0 #+ (get_upper_bound d cv));
+      d'.(ni0).(pi0) <-
+        two #* ((types_neg c0) #+ (get_upper_bound d (negate_coeff cv)));
+
+      (* Update constraints involving the updated variable *)
+      for i = 0 to (2 * n) - 1 do
+        if i != pi0 && i != ni0 then (
+          d'.(pi0).(i) <- d'.(pi0).(ni0) #/ two #+ (d'.(bar i).(i) #/ two);
+          d'.(bar i).(ni0) <- d'.(pi0).(i))
+      done;
+      for i = 0 to (2 * n) - 1 do
+        if i != pi0 && i != ni0 then (
+          d'.(i).(pi0) <- d'.(i).(bar i) #/ two #+ (d'.(ni0).(pi0) #/ two);
+          d'.(ni0).(bar i) <- d'.(i).(pi0))
+      done;
+      DBM d'
+
 (* 
 Returns a new dbm m' given the current dbm m and an assignment of the form 
 v_i0 <- c1 * v_i1 + c2 * v_i2 + c0 where c1 and c2 are from the set {-1, 0, 1}
