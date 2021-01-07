@@ -8,7 +8,7 @@ let get_best_bound d ((c1, i1) : int * int) ((c2, i2) : int * int) =
   let pi2 = 2 * i2 in
   let ni2 = bar pi2 in
   match (c1, c2) with
-  | 0, 0 -> Z.zero
+  | 0, 0 -> Number Z.zero
   | -1, 0 -> d.(ni1).(pi1) #/ two
   | 1, 0 -> d.(pi1).(ni1) #/ two
   | 0, -1 -> d.(ni2).(pi2) #/ two
@@ -23,7 +23,7 @@ let get_best_bound d ((c1, i1) : int * int) ((c2, i2) : int * int) =
 Returns a new dbm m' given the current dbm m and an assignment of the form 
 v_i0 <- c1 * v_i1 + c2 *v_i2 + c0 where c1 and c2 are from the set {-1, 0, 1}
 *)
-let dbm_after_assignment_direct (m : dbm) (i0 : int) (c0 : Z.t)
+let dbm_after_assignment_direct (m : dbm) (i0 : int) (c0 : integer)
     ((c1, i1) : int * int) ((c2, i2) : int * int) =
   match m with
   | Bot -> Bot
@@ -43,7 +43,7 @@ let dbm_after_assignment_direct (m : dbm) (i0 : int) (c0 : Z.t)
 
       (* Update assigned variable *)
       d'.(pi0).(ni0) <- two #* (c0 #+ (get_best_bound d (c1, i1) (c2, i2)));
-      d'.(ni0).(pi0) <- two #* ((Z.neg c0) #+ (get_best_bound d (-c1, i1) (-c2, i2)));
+      d'.(ni0).(pi0) <- two #* ((types_neg c0) #+ (get_best_bound d (-c1, i1) (-c2, i2)));
 
       (* Update constraints involving the updated variable *)
       for i = 0 to (2 * n) - 1 do
@@ -69,7 +69,7 @@ let dbm_after_assignment_direct (m : dbm) (i0 : int) (c0 : Z.t)
           min_of
             [
               d'.(pi1).(pi0);
-              (Z.neg c0) #+ (get_best_bound d (0, 0) (-c2, i2));
+              (types_neg c0) #+ (get_best_bound d (0, 0) (-c2, i2));
             ];
         d'.(bar pi1).(bar pi0) <- d'.(pi0).(pi1);
         d'.(bar pi0).(bar pi1) <- d'.(pi1).(pi0));
@@ -85,7 +85,7 @@ let dbm_after_assignment_direct (m : dbm) (i0 : int) (c0 : Z.t)
           min_of
             [
               d'.(pi1).(ni0);
-              (Z.neg c0) #+ (get_best_bound d (0, 0) (-c2, i2));
+              (types_neg c0) #+ (get_best_bound d (0, 0) (-c2, i2));
             ];
         d'.(bar ni1).(bar pi0) <- d'.(pi0).(ni1);
         d'.(bar pi0).(bar ni1) <- d'.(ni1).(pi0));
@@ -101,7 +101,7 @@ let dbm_after_assignment_direct (m : dbm) (i0 : int) (c0 : Z.t)
           min_of
             [
               d'.(pi2).(pi0);
-              (Z.neg two #* c0) #+ (get_best_bound d (0, 0) (-c1, i1));
+              (types_neg two #* c0) #+ (get_best_bound d (0, 0) (-c1, i1));
             ];
         d'.(bar pi2).(bar pi0) <- d'.(pi0).(pi2);
         d'.(bar pi0).(bar pi2) <- d'.(pi2).(pi0));
@@ -117,7 +117,7 @@ let dbm_after_assignment_direct (m : dbm) (i0 : int) (c0 : Z.t)
           min_of
             [
               d'.(pi2).(ni0);
-              (Z.neg c0) #+ (get_best_bound d (0, 0) (-c1, i1));
+              (types_neg c0) #+ (get_best_bound d (0, 0) (-c1, i1));
             ];
         d'.(bar ni2).(bar pi0) <- d'.(pi0).(ni2);
         d'.(bar pi0).(bar ni2) <- d'.(ni2).(pi0)); 
