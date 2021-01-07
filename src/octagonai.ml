@@ -2,6 +2,8 @@
 open Types
 open AbstractOperations
 open Closure
+open Frontc
+open Cabs
 
 (* Followings are just my testing code. Feel free to remove them. *)
 (* Number of program variables *)
@@ -22,17 +24,17 @@ let _ =
   let m1 = top n 
   and m2 = top n in
   (* Add a constraint of x1 >= 0 *)
-  add_constraint_one m1 0 GE Z.zero;
-  add_constraint_one m2 0 GE Z.zero;
+  add_constraint_one m1 0 GE types_zero;
+  add_constraint_one m2 0 GE types_zero;
   if (is_in e m1) then print_endline "true(O)" else print_endline "false(X)";
 
   (* Add a constraint of x2 <= 2 *)
-  add_constraint_one m2 1 LE (Z.of_int 2);
+  add_constraint_one m2 1 LE (types_of_int 2);
   if (is_in e m2) then print_endline "true(O)" else print_endline "false(X)";
   if (is_inside m2 m1) then print_endline "true(O)" else print_endline "false(X)";
 
   (* Add a constraint of x1 + x2 = 3 *)
-  add_constraint_two m1 false 0 false 1 EQ (Z.of_int 3);
+  add_constraint_two m1 false 0 false 1 EQ (types_of_int 3);
   if (is_in e m1) then print_endline "true(O)" else print_endline "false(X)";
   if (is_inside m2 m1) then print_endline "true(X)" else print_endline "false(O)";
 
@@ -42,7 +44,7 @@ let _ =
   if (is_inside b m1) then print_endline "true(O)" else print_endline "false(X)";
 
   (* Add a constraint of x1 == 3 *)
-  add_constraint_one m1 0 EQ (Z.of_int 3);
+  add_constraint_one m1 0 EQ (types_of_int 3);
   if (is_in e m1) then print_endline "true(X)" else print_endline "false(O)";
 
   let m3 = join m1 m2 
@@ -55,13 +57,13 @@ let _ =
   print_endline "\nTesting Closure Algorithms\n";
 
   let m1 = top 3 in
-  add_constraint_two m1 false 1 true 0 LE (5 |> Z.of_int);
-  add_constraint_two m1 false 0 true 1 LE (-1 |> Z.of_int);
-  add_constraint_two m1 false 2 true 0 LE (3 |> Z.of_int);
-  add_constraint_two m1 false 0 true 2 LE (-1 |> Z.of_int);
-  add_constraint_two m1 false 1 true 2 LE (1 |> Z.of_int);
-  add_constraint_one m1 0 LE (10 |> Z.of_int);
-  add_constraint_one m1 2 GE (0 |> Z.of_int);
+  add_constraint_two m1 false 1 true 0 LE (5 |> types_of_int);
+  add_constraint_two m1 false 0 true 1 LE (-1 |> types_of_int);
+  add_constraint_two m1 false 2 true 0 LE (3 |> types_of_int);
+  add_constraint_two m1 false 0 true 2 LE (-1 |> types_of_int);
+  add_constraint_two m1 false 1 true 2 LE (1 |> types_of_int);
+  add_constraint_one m1 0 LE (10 |> types_of_int);
+  add_constraint_one m1 2 GE (0 |> types_of_int);
 
   print_endline "Original DBM";
   print_dbm m1;
@@ -86,12 +88,12 @@ let _ =
 
   let m2 = top 2 in
 
-  add_constraint_two m2 false 0 false 1 LE (4 |> Z.of_int);
-  add_constraint_two m2 false 1 true 0 LE (3 |> Z.of_int);
-  add_constraint_two m2 false 0 true 1 LE (3 |> Z.of_int);
-  add_constraint_two m2 true 0 true 1 LE (3 |> Z.of_int);
-  add_constraint_one m2 1 LE (1 |> Z.of_int);
-  add_constraint_one m2 1 GE (-4 |> Z.of_int);
+  add_constraint_two m2 false 0 false 1 LE (4 |> types_of_int);
+  add_constraint_two m2 false 1 true 0 LE (3 |> types_of_int);
+  add_constraint_two m2 false 0 true 1 LE (3 |> types_of_int);
+  add_constraint_two m2 true 0 true 1 LE (3 |> types_of_int);
+  add_constraint_one m2 1 LE (1 |> types_of_int);
+  add_constraint_one m2 1 GE (-4 |> types_of_int);
 
   print_endline "\n\n\nOriginal DBM";
   print_dbm m2;
@@ -116,11 +118,11 @@ let _ =
 
   let m3 = top 2 in
 
-  add_constraint_one m3 0 LE (1 |> Z.of_int);
-  add_constraint_one m3 0 GE (-1 |> Z.of_int);
-  add_constraint_one m3 1 LE (2 |> Z.of_int);
-  add_constraint_one m3 1 GE (-2 |> Z.of_int);
-  add_constraint_two m3 false 0 false 1 LE (10 |> Z.of_int);
+  add_constraint_one m3 0 LE (1 |> types_of_int);
+  add_constraint_one m3 0 GE (-1 |> types_of_int);
+  add_constraint_one m3 1 LE (2 |> types_of_int);
+  add_constraint_one m3 1 GE (-2 |> types_of_int);
+  add_constraint_two m3 false 0 false 1 LE (10 |> types_of_int);
 
   print_endline "\n\n\nOriginal DBM";
   print_dbm m3;

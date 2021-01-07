@@ -2,10 +2,14 @@ open Types
 open AbstractOperations
 
 (* Print a 2d integral matrix *)
-let print_2d_int_array (arr: Z.t array array) = 
+let print_2d_int_array (arr: integer array array) = 
   arr |> Array.iter 
     (fun xs -> 
-       (xs |> Array.iter (fun x -> if x < (Z.of_int32 Int32.max_int) then (Format.printf "%8ld "  (Z.to_int32 x)) else (Format.print_string "    +Inf ") ));
+       (xs |> Array.iter (fun x -> match x with 
+            | Number n -> Z.print n; Format.print_string "    "
+            | Infty sign -> if sign then (Format.print_string "    -Inf ") else (Format.print_string "    +Inf ")
+            )
+       );
        Format.printf "\n"
     )
 
@@ -41,11 +45,11 @@ let update_diagonal_elems (arr: 'a array array) (v: 'a): unit =
   Array.iteri (fun ind _ -> (arr.(ind).(ind) <- v)) arr
 
 (* Compute the minimum element in a list *)
-let rec min_of (lst: Z.t list) = 
+let rec min_of (lst: integer list) = 
   match lst with 
   | [] -> raise (Invalid_argument "min_of needs a non-empty list")
   | [hd] -> hd
-  | hd::tl -> Z.min hd (min_of tl) 
+  | hd::tl -> types_min hd (min_of tl) 
 
 (* Uppdate (i, j)-th entry of arr with f(arr, i, j) *)
 let update_in_place (arr: 'a array array) (f: 'a array array -> int -> int -> 'a) =
@@ -64,14 +68,14 @@ let shortest_path_closure (d: dbm): dbm =
     let res = copy_of_2d_array mat in
 
     for k = 0 to 2*n - 1 do
-      update_in_place res (fun arr i j ->  Z.min arr.(i).(j) (arr.(i).(k) #+ arr.(k).(j)));
+      update_in_place res (fun arr i j ->  types_min arr.(i).(j) (arr.(i).(k) #+ arr.(k).(j)));
     done;
 
-    if exists_diagonal_entry res (fun x -> x #< Z.zero)
+    if exists_diagonal_entry res (fun x -> x #< types_zero)
     then Bot
-    else (update_diagonal_elems res Z.zero; DBM res)
+    else (update_diagonal_elems res types_zero; DBM res)
 
-let entry_update_c_int (k: int) (arr: Z.t array array) (i: int) (j: int): Z.t = 
+let entry_update_c_int (k: int) (arr: integer array array) (i: int) (j: int): integer = 
   min_of [ 
     arr.(i).(j); 
     arr.(i).(2*k) #+ arr.(2*k).(j); 
@@ -80,10 +84,10 @@ let entry_update_c_int (k: int) (arr: Z.t array array) (i: int) (j: int): Z.t =
     arr.(i).(2*k+1) #+ arr.(2*k+1).(2*k) #+ arr.(2*k).(j)
   ]
 
-let entry_update_s_int (arr: Z.t array array) (i: int) (j: int): Z.t = 
+let entry_update_s_int (arr: integer array array) (i: int) (j: int): integer = 
   let sum_of_diags_indexed_i_and_j = arr.(i).(bar i) #+ arr.(bar j).(j) in
   (* assert (Z.is_even sum_of_diags_indexed_i_and_j); TODO should check! *)
-  Z.min arr.(i).(j) (sum_of_diags_indexed_i_and_j #/ two)
+  types_min arr.(i).(j) (sum_of_diags_indexed_i_and_j #/ two)
 
 (* Strong closure O(n^3) running time *)
 let strong_closure (d: dbm): dbm =
@@ -98,9 +102,9 @@ let strong_closure (d: dbm): dbm =
       update_in_place res entry_update_s_int
     done;
 
-    if exists_diagonal_entry res (fun x -> x #< Z.zero)
+    if exists_diagonal_entry res (fun x -> x #< types_zero)
     then Bot
-    else (update_diagonal_elems res Z.zero; DBM res)
+    else (update_diagonal_elems res types_zero; DBM res)
 
 (* Tight Closures - Only Needed for Integral DBMs whene we can tighten certain constraints using the integrality *)
 (* Computes incremental tight closure when arr was tightly close and then (i0, j0) constraint was updated *)
@@ -119,20 +123,20 @@ let inc_tight_closure_in_place (m: dbm ref) (i0, j0: int*int): unit =
         else 
           min_of [
             mat.(i).(j);
-            two #* (mat.(i0).(j0) #+ mat.(i).(bar j0) #+ (assert (Z.is_even mat.(bar i0).(i0)); mat.(bar i0).(i0) #/ two));
-            two #* (mat.(i0).(j0) #+ mat.(i).(i0) #+ (assert (Z.is_even mat.(j0).(bar j0)); mat.(j0).(bar j0) #/ two));
+            two #* (mat.(i0).(j0) #+ mat.(i).(bar j0) #+ (assert (types_is_even mat.(bar i0).(i0)); mat.(bar i0).(i0) #/ two));
+            two #* (mat.(i0).(j0) #+ mat.(i).(i0) #+ (assert (types_is_even mat.(j0).(bar j0)); mat.(j0).(bar j0) #/ two));
             two #* ((mat.(i).(i0) #+ mat.(i0).(j0) #+ mat.(j0).(bar i)) #/ two)
           ]
       );
 
     update_in_place mat (fun arr i j ->
-        Z.min new_mat.(i).(j) (let sum = new_mat.(i).(bar i) #+ new_mat.(bar j).(j) in assert (Z.is_even sum); sum #/ two)
+        types_min new_mat.(i).(j) (let sum = new_mat.(i).(bar i) #+ new_mat.(bar j).(j) in assert (types_is_even sum); sum #/ two)
       );
 
-    if exists_diagonal_entry mat (fun x -> x #< Z.zero) then
+    if exists_diagonal_entry mat (fun x -> x #< types_zero) then
       m := Bot
     else 
-      update_diagonal_elems mat Z.zero
+      update_diagonal_elems mat types_zero
 
 let is_dbm_coherent (d: dbm): bool =
   match d with
@@ -142,7 +146,7 @@ let is_dbm_coherent (d: dbm): bool =
     let n = Array.length mat in
     for i=0 to n-1 do
       for j=0 to n-1 do
-        if not (Z.equal mat.(i).(j) mat.(bar j).(bar i))
+        if not (mat.(i).(j) #= mat.(bar j).(bar i))
         then result := false
       done
     done;
@@ -163,7 +167,7 @@ let is_coherent_dbm_tightly_closed (d: dbm): bool =
         if mat.(i).(j) #> ((mat.(i).(bar i) #+ mat.(bar j).(j)) #/ two)
         then result := false
       done;
-      if Z.is_odd mat.(i).(bar i) || not (Z.equal mat.(i).(i) Z.zero)
+      if types_is_odd mat.(i).(bar i) || not (mat.(i).(i) #= types_zero)
       then result := false
     done;
     !result
@@ -188,8 +192,8 @@ let tight_closure (d: dbm): dbm =
 
     match !d_new with
     | Bot -> Bot
-    | DBM result when exists_diagonal_entry result (fun x -> x #< Z.zero) -> Bot
-    | DBM result -> (update_diagonal_elems result Z.zero; DBM result)
+    | DBM result when exists_diagonal_entry result (fun x -> x #< types_zero) -> Bot
+    | DBM result -> (update_diagonal_elems result types_zero; DBM result)
 
 (* Tight closure for integers O(n^3) running time *)
 let tight_closure_optimized (d: dbm) =
@@ -202,14 +206,14 @@ let tight_closure_optimized (d: dbm) =
   (* Make d_new coherent *)
   for i = 0 to (2*n - 1) do 
     for j = 0 to (2*n - 1) do 
-      d_new.(i).(j) <- Z.min d_new.(i).(j) d_new.(bar j).(bar i);
+      d_new.(i).(j) <- types_min d_new.(i).(j) d_new.(bar j).(bar i);
     done;
   done;
 
   for k = 0 to 2*n - 1 do
     for i = 0 to 2*n - 1 do 
       for j = 0 to 2*n - 1 do
-        d_new.(i).(j) <- Z.min d_new.(i).(j) (d_new.(i).(k) #+ d_new.(k).(j));
+        d_new.(i).(j) <- types_min d_new.(i).(j) (d_new.(i).(k) #+ d_new.(k).(j));
         d_new.(bar j).(bar i) <- d_new.(i).(j);
       done;      
     done;  
@@ -217,14 +221,14 @@ let tight_closure_optimized (d: dbm) =
   
   for i = 0 to 2*n - 1 do
     for j = 0 to 2*n - 1 do
-      d_new.(i).(j) <- Z.min d_new.(i).(j) ((d_new.(i).(bar i) #/ two) #+ (d_new.(bar j).(j) #/ two));
+      d_new.(i).(j) <- types_min d_new.(i).(j) ((d_new.(i).(bar i) #/ two) #+ (d_new.(bar j).(j) #/ two));
       d_new.(bar j).(bar i) <- d_new.(i).(j);
     done;
   done;  
 
-  if exists_diagonal_entry d_new (fun x -> x #< Z.zero)
+  if exists_diagonal_entry d_new (fun x -> x #< types_zero)
   then Bot 
-  else (update_diagonal_elems d_new Z.zero; DBM d_new)
+  else (update_diagonal_elems d_new types_zero; DBM d_new)
 ;;
 
 (* Compute the clousre - for Integral DBMs this would be the tight closure, and for Float DBMs this would be the strong closure *)
