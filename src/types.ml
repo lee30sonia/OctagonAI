@@ -7,6 +7,9 @@ type relation = GE | LE | EQ
 (* A C program state: a list of all program variables *)
 type concrete_env = int array
 
+module Context = Map.Make(String)
+type env = int Context.t
+
 (** The abstract domain: a matrix encoding relations among program variables **)
 
 type integer = Number of Z.t | Infty of bool (* false is +infinity, true is -infinity*) 
@@ -14,7 +17,7 @@ type integer = Number of Z.t | Infty of bool (* false is +infinity, true is -inf
 (* A DBM: a matrix of itype *)
 type dbm = Bot | DBM of integer array array
 
-(* Arbitrary precision integers' infixe operators *)
+(* Custom Integers' infixe operators *)
 
 let rec (#+) x y = match (x, y) with
     | (Infty bx, Infty by) when bx <> by -> failwith "Undefined +" (*inf - inf*)
@@ -101,4 +104,4 @@ let types_is_odd x = match x with
     | Number n -> Z.is_odd n
     | _ -> failwith "Undefined odd"
 
-
+let types_of_string nb = Number (Z.of_string nb)

@@ -4,6 +4,13 @@ open AbstractOperations
 open Closure
 open Frontc
 open Cabs
+open Analyser
+
+
+let start_parse () =
+  match Frontc.parse_file "./test.c" stdout with
+  | Frontc.PARSING_ERROR -> failwith "Impossible to parse the file"
+  | Frontc.PARSING_OK definitions -> analyzeFunctions definitions
 
 (* Followings are just my testing code. Feel free to remove them. *)
 (* Number of program variables *)
@@ -214,9 +221,12 @@ let _ =
   let _ = time (fun() -> (tight_closure t50)) in 
   print_endline "done t50";
 
-  let _ = time (fun() -> (tight_closure t100)) in 
+  (*let _ = time (fun() -> (tight_closure t100)) in 
   print_endline "done t100";
 
   let _ = time (fun() -> (tight_closure t200)) in 
-  print_endline "done t200"
+  print_endline "done t200";*)
+  
+
+  start_parse ()
 
