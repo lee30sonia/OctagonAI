@@ -174,7 +174,11 @@ let _ =
 
   print_endline "after assigning v3 = v1 - v2";
   let m4 = tight_closure_optimized ( dbm_after_assignment_direct m3 2 (Number (Z.zero)) (1, 0) (-1, 1)) in 
-  print_dbm m4
+  print_dbm m4;
+
+  print_endline "after assigning v3 = 10v1 - 7v2";
+  let m5 = tight_closure_optimized (dbm_after_general_assignment m4 2 (Number Z.zero) [(Number (Z.of_int 10), 0); (Number (Z.of_int (-7)), 1)]) in
+  print_dbm m5
 
 let time f =
   let t = Unix.gettimeofday () in
