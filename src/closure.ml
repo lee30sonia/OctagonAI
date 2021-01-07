@@ -1,40 +1,6 @@
 open Types
 open AbstractOperations
-
-(* Print a 2d integral matrix *)
-let print_2d_int_array (arr: integer array array) = 
-  arr |> Array.iter 
-    (fun xs -> 
-       (xs |> Array.iter (fun x -> match x with 
-            | Number n -> Z.print n; Format.print_string "    "
-            | Infty sign -> if sign then (Format.print_string "    -Inf ") else (Format.print_string "    +Inf ")
-            )
-       );
-       Format.printf "\n"
-    )
-
-(* Print a dbm *)
-let print_dbm (d: dbm) =
-  match d with
-  | Bot -> print_endline "⊥"
-  | DBM mat -> print_2d_int_array mat
-
-(* Get the index of the negative form (positive form) of a variable given the index of its positive form (negative form). *)
-let bar (ind: int): int = 
-  if (ind mod 2) = 0 then ind + 1 else ind - 1
-
-(* Create a copy of a 2d-array *)
-let copy_of_2d_array (arr: 'a array array) = 
-  Array.init (Array.length arr) (fun row -> Array.init (Array.length arr.(row)) (fun col -> arr.(row).(col)))
-
-(* Compute the number of variables in the environment related to a given matrix 'm' *)
-let num_env_vars_of_matrix (m: 'a array array) = 
-  let nr = Array.length m in
-
-  assert (nr > 0);
-  assert (nr mod 2 = 0);
-  m |> Array.iter (fun row -> assert (nr = Array.length row));
-  (nr / 2)
+open Utils
 
 (* Check whether there exist a diagonal entry satisfying the predicate f *)
 let exists_diagonal_entry (arr: 'a array array) (f: 'a -> bool): bool =
@@ -44,12 +10,6 @@ let exists_diagonal_entry (arr: 'a array array) (f: 'a -> bool): bool =
 let update_diagonal_elems (arr: 'a array array) (v: 'a): unit =
   Array.iteri (fun ind _ -> (arr.(ind).(ind) <- v)) arr
 
-(* Compute the minimum element in a list *)
-let rec min_of (lst: integer list) = 
-  match lst with 
-  | [] -> raise (Invalid_argument "min_of needs a non-empty list")
-  | [hd] -> hd
-  | hd::tl -> types_min hd (min_of tl) 
 
 (* Uppdate (i, j)-th entry of arr with f(arr, i, j) *)
 let update_in_place (arr: 'a array array) (f: 'a array array -> int -> int -> 'a) =

@@ -2,6 +2,8 @@
 open Types
 open AbstractOperations
 open Closure
+open Utils
+open AbstractTransfers
 open Frontc
 open Cabs
 open Analyser
@@ -15,21 +17,24 @@ let start_parse () =
 (* Followings are just my testing code. Feel free to remove them. *)
 (* Number of program variables *)
 let n = 2
+
 (* Program variables *)
 let x1 = 1
+
 let x2 = 2
+
 (* The environment (current program state) *)
-let e: concrete_env = [|x1 ; x2|]
+let e : concrete_env = [| x1; x2 |]
 
 (* The greatest DBM *)
 let t = top n
+
 (* The smallest DBM *)
 let b = bottom n
 
-let _ = 
+let _ =
   (* Create two working matrices, strating from top and adding constraints to them *)
-  let m1 = top n 
-  and m2 = top n in
+  let m1 = top n and m2 = top n in
   (* Add a constraint of x1 >= 0 *)
   add_constraint_one m1 0 GE types_zero;
   add_constraint_one m2 0 GE types_zero;
@@ -45,22 +50,21 @@ let _ =
   if (is_in e m1) then print_endline "true(O)" else print_endline "false(X)";
   if (is_inside m2 m1) then print_endline "true(X)" else print_endline "false(O)";
 
-  if (is_inside m1 t) then print_endline "true(O)" else print_endline "false(X)";
-  if (is_inside m2 t) then print_endline "true(O)" else print_endline "false(X)";
-  if (is_inside b m1) then print_endline "true(O)" else print_endline "false(X)";
-  if (is_inside b m1) then print_endline "true(O)" else print_endline "false(X)";
+  if is_inside m1 t then print_endline "true(O)" else print_endline "false(X)";
+  if is_inside m2 t then print_endline "true(O)" else print_endline "false(X)";
+  if is_inside b m1 then print_endline "true(O)" else print_endline "false(X)";
+  if is_inside b m1 then print_endline "true(O)" else print_endline "false(X)";
 
   (* Add a constraint of x1 == 3 *)
   add_constraint_one m1 0 EQ (types_of_int 3);
   if (is_in e m1) then print_endline "true(X)" else print_endline "false(O)";
 
-  let m3 = join m1 m2 
-  and m4 = meet m1 m2 in
-  if (is_in e m3) then print_endline "true(O)" else print_endline "false(X)";
-  if (is_in e m4) then print_endline "true(X)" else print_endline "false(O)"
+  let m3 = join m1 m2 and m4 = meet m1 m2 in
+  if is_in e m3 then print_endline "true(O)" else print_endline "false(X)";
+  if is_in e m4 then print_endline "true(X)" else print_endline "false(O)"
 
 (* Testing the closure operation *)
-let _ = 
+let _ =
   print_endline "\nTesting Closure Algorithms\n";
 
   let m1 = top 3 in
@@ -152,73 +156,90 @@ let _ =
   print_dbm tight_closure_opt_m3;
   assert (is_coherent_dbm_tightly_closed tight_closure_opt_m3)
 
+(* Testing abstract transfer functions *)
+let _ =
+  print_endline "\nTesting Abstract Transfers\n";
+
+  print_endline "before any assingment";
+  let m1 = tight_closure_optimized (top 3) in
+  print_dbm m1;
+
+  print_endline "after assigning v1 = 10";
+  let m2 = tight_closure_optimized  (dbm_after_assignment_direct m1 0 (Number (Z.of_int 10)) (0, 0) (0, 0)) in 
+  print_dbm m2;
+  
+  print_endline "after assigning v2 = v1 - 5";
+  let m3 = tight_closure_optimized ( dbm_after_assignment_direct m2 1 (Number (Z.neg (Z.of_int 5))) (1, 0) (0, 0)) in 
+  print_dbm m3;
+
+  print_endline "after assigning v3 = v1 - v2";
+  let m4 = tight_closure_optimized ( dbm_after_assignment_direct m3 2 (Number (Z.zero)) (1, 0) (-1, 1)) in 
+  print_dbm m4
 
 let time f =
   let t = Unix.gettimeofday () in
   let res = f () in
-  Printf.printf "\nExecution time: %f seconds\n"
-                (Unix.gettimeofday () -. t);
+  Printf.printf "\nExecution time: %f seconds\n" (Unix.gettimeofday () -. t);
   res
 
 (* Testing the closure operations timing *)
-let _ = 
+(*
+let time_closures =
   print_endline "\nTesting Closure Algorithms Timing\n";
 
-  let t25 = top  25 in
-  let t50 = top  50 in
-  let t100 = top  100 in
-  let t200 = top  200 in
+  let t25 = top 25 in
+  let t50 = top 50 in
+  let t100 = top 100 in
+  let t200 = top 200 in
 
   print_endline "\nShortest Path Closure\n\n";
-  
-  let _ = time (fun() -> (shortest_path_closure t25)) in
+
+  let _ = time (fun () -> shortest_path_closure t25) in
   print_endline "done t25";
 
-  let _ = time (fun() -> (shortest_path_closure t50)) in 
+  let _ = time (fun () -> shortest_path_closure t50) in
   print_endline "done t50";
 
-  let _ = time (fun() -> (shortest_path_closure t100)) in 
+  let _ = time (fun () -> shortest_path_closure t100) in
   print_endline "done t100";
 
-  let _ = time (fun() -> (shortest_path_closure t200)) in 
+  let _ = time (fun () -> shortest_path_closure t200) in
   print_endline "done t200";
 
   print_endline "\n\nStrong Closure\n\n";
 
-  let _ = time (fun() -> (strong_closure t25)) in
+  let _ = time (fun () -> strong_closure t25) in
   print_endline "done t25";
 
-  let _ = time (fun() -> (strong_closure t50)) in 
+  let _ = time (fun () -> strong_closure t50) in
   print_endline "done t50";
 
-  let _ = time (fun() -> (strong_closure t100)) in 
+  let _ = time (fun () -> strong_closure t100) in
   print_endline "done t100";
 
-  let _ = time (fun() -> (strong_closure t200)) in 
+  let _ = time (fun () -> strong_closure t200) in
   print_endline "done t200";
-
 
   print_endline "\n\nOptimized Tight Closure\n\n";
 
-  let _ = time (fun() -> (tight_closure_optimized t25)) in
+  let _ = time (fun () -> tight_closure_optimized t25) in
   print_endline "done t25";
 
-  let _ = time (fun() -> (tight_closure_optimized t50)) in 
+  let _ = time (fun () -> tight_closure_optimized t50) in
   print_endline "done t50";
 
-  let _ = time (fun() -> (tight_closure_optimized t100)) in 
+  let _ = time (fun () -> tight_closure_optimized t100) in
   print_endline "done t100";
 
-  let _ = time (fun() -> (tight_closure_optimized t200)) in 
+  let _ = time (fun () -> tight_closure_optimized t200) in
   print_endline "done t200";
-
 
   print_endline "\n\nTight Closure\n\n";
 
-  let _ = time (fun() -> (tight_closure t25)) in
+  let _ = time (fun () -> tight_closure t25) in
   print_endline "done t25";
 
-  let _ = time (fun() -> (tight_closure t50)) in 
+  let _ = time (fun () -> tight_closure t50) in
   print_endline "done t50";
 
   (*let _ = time (fun() -> (tight_closure t100)) in 
@@ -230,3 +251,4 @@ let _ =
 
   start_parse ()
 
+*)
