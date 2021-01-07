@@ -7,6 +7,9 @@ type relation = GE | LE | EQ
 (* A C program state: a list of all program variables *)
 type concrete_env = int array
 
+module Context = Map.Make(String)
+type env = int Context.t
+
 (** The abstract domain: a matrix encoding relations among program variables **)
 
 (* A DBM: a matrix of itype *)
