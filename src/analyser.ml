@@ -2,8 +2,11 @@
 open Types
 open Cabs
 open AbstractOperations
+open AbstractTransfers
 
-let notSupported () = failwith "Not supported"
+let notSupported () =
+  Printexc.get_callstack 5 |> Printexc.raw_backtrace_to_string |> print_endline;
+  failwith "Not supported"
 
 let get_var_index (vn: string) (env: env): int =
   if Context.mem vn env then Context.find vn env
@@ -39,9 +42,11 @@ and analyzeBlock (defs, stmts: body): env * dbm =
 and analyzeStatement (stmt: statement) (env: env) (state: dbm): dbm =
   begin match stmt with
   | NOP -> state
-  | COMPUTATION expr -> analyzeExpression env state expr
+  | COMPUTATION expr ->
+    analyzeExpression env state expr
   | BLOCK b -> notSupported ()
-  | SEQUENCE (stmt1, stmt2) -> state |> analyzeStatement stmt1 env |> analyzeStatement stmt2 env
+  | SEQUENCE (stmt1, stmt2) -> 
+    state |> analyzeStatement stmt1 env |> analyzeStatement stmt2 env
   | IF (cond, then_stmt, else_stmt) -> (* TODO should use backward expressions *)
     join (analyzeStatement then_stmt env state) (analyzeStatement else_stmt env state)
   | WHILE (cond, stmt) -> notSupported ()
@@ -63,11 +68,38 @@ and analyzeExpression (env: env) (state: dbm) (expr: expression): dbm =
   | BINARY (op, expr1, expr2) ->
       begin match (op, expr1) with
       | (ASSIGN, VARIABLE vn) ->
+        let vn_id = get_var_index vn env in
       	begin match expr2 with
-      	| UNARY (op, expr3) -> (*TODO*) state
-      	| BINARY (op, expr3, expr4) -> (*TODO*) state
-      	| CONSTANT cst -> (*TODO*) state
-      	| VARIABLE vn2 ->(*TODO*) state
+        | NOTHING -> state
+        | UNARY (MINUS, VARIABLE vn1) ->
+          let vn1_id = get_var_index vn env in
+          dbm_after_assignment_direct state vn_id (Number Z.zero) (-1, vn1_id) (0,0) 
+        | UNARY (PLUS, VARIABLE vn1) | VARIABLE vn1 ->
+          let vn1_id = get_var_index vn env in
+          dbm_after_assignment_direct state vn_id (Number Z.zero) (1, vn1_id) (0,0)
+        | BINARY (op, expr3, expr4) ->
+          let (i1,v1,i2,v2,c) =
+            match (expr3, expr4) with
+            | (CONSTANT cst1, CONSTANT cst2) ->
+              let c =              
+                match op with
+                | ADD -> (analyzeConstant cst1) #+ (analyzeConstant cst2)
+                | SUB -> (analyzeConstant cst1) #- (analyzeConstant cst2)
+                | MUL -> (analyzeConstant cst1) #* (analyzeConstant cst2)
+                | DIV -> (analyzeConstant cst1) #/ (analyzeConstant cst2)
+                | _ -> notSupported ()
+              in (0,0,0,0,c)
+            | (VARIABLE vn2, CONSTANT cst) -> 
+              (1,get_var_index vn2 env,0,0, begin match op with ADD -> analyzeConstant cst | SUB -> (Number Z.zero) #- (analyzeConstant cst) | _ -> notSupported () end)
+            | (CONSTANT cst, VARIABLE vn2) ->
+              (begin match op with ADD -> 1 | SUB -> -1 | _ -> notSupported () end, get_var_index vn2 env,0,0,analyzeConstant cst)
+            | (VARIABLE vn2, VARIABLE vn3) ->
+              (1,get_var_index vn2 env,begin match op with ADD -> 1 | SUB -> -1 | _ -> notSupported () end,get_var_index vn3 env,Number Z.zero)
+            | _ -> notSupported ()
+          in
+          dbm_after_assignment_direct state vn_id c (i1,v1) (i2,v2)
+        | CONSTANT cst ->
+          dbm_after_assignment_direct state vn_id (analyzeConstant cst) (0,0) (0,0)
       	| _ -> notSupported ()
         end
       | (ADD_ASSIGN, _) ->

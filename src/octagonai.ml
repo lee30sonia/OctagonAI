@@ -65,6 +65,7 @@ let _ =
 
 (* Testing the closure operation *)
 let _ =
+  start_parse ();
   print_endline "\nTesting Closure Algorithms\n";
 
   let m1 = top 3 in
@@ -253,6 +254,5 @@ let time_closures =
   print_endline "done t200";*)
   
 
-  start_parse ()
 
 *)
