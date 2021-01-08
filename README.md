@@ -6,9 +6,12 @@ This project was created by Jérôme Boillot, Orégane Desrentes, Siang-Yun Lee,
 # How to execute the project
 
 Please use ocaml version 4.11.0 or later.
+
 We recommend using `opam` for the module management.
+
 Modules `zarith`, `frontc` and `dune` are necessary for this project to run (`opam install zarith frontc dune`)
 `make` builds the project.
+
 Once the project is built, you can analyse a program in the file `program.c` with the command `./main.native program.c`
 
 # Tests
