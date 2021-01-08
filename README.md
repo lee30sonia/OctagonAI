@@ -6,11 +6,16 @@ This project was created by Jérôme Boillot, Orégane Desrentes, Siang-Yun Lee,
 # How to execute the project
 
 Please use ocaml version 4.11.0 or later.
+
 We recommend using `opam` for the module management.
+
 Modules `zarith`, `frontc` and `dune` are necessary for this project to run (`opam install zarith frontc dune`)
 `make` builds the project.
 The first time you build the project with `make` you have to execute the following link command: `ln -s _build/install/default/bin/octagonai main.native` so it is easier to execute the analyser.
 Once the project is built, you can analyse a program in the file `program.c` with the command `./main.native program.c`
+
+
+To compile and run the example analysis written in the report, simply use the command `make run`.
 
 # Tests
 
@@ -20,7 +25,7 @@ The command `./main.native --tests` runs a series of tests, in particular on abs
 Tests adding constraints to the DBM and testing if they are satisfied.
 
 ### Test of Closure Algorithms
-Starts with a DBM with a few constraints, and apply different closure algorithms to them : Shortest path, Strong, tight and Optimised Tight. This is tested with 3 different DBMs of different sizes.
+Starts with a DBM with a few constraints, and apply different closure algorithms to them : Shortest Path, Strong, Tight and Optimised Tight. This is tested with 3 different DBMs of different sizes.
 
 ### Test of Abstract Transfers
 Tests the state of the DBM after assigning variables with linear combinations of other variables.
