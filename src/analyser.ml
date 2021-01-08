@@ -14,59 +14,60 @@ let get_var_index (vn: string) (env: env): int =
   if Context.mem vn env then Context.find vn env
   else failwith ("The variable " ^ vn ^ " does not exist")
 
-let rec analyzeDefinitions (defs: definition list) (index: int): env * statement * int =
+let rec analyseDefinitions (defs: definition list) (index: int): env * statement * int =
   match defs with
   | [] -> (Context.empty, NOP, index)
   | (DECDEF (INT (buf1, buf2), buf3, (vn, _, _, expr)::others))::t ->
-    let (last_env, assigns, max_index) = analyzeDefinitions ((DECDEF (INT (buf1, buf2), buf3, others))::t) (index + 1) in
+    let (last_env, assigns, max_index) = analyseDefinitions ((DECDEF (INT (buf1, buf2), buf3, others))::t) (index + 1) in
     (Context.add vn index last_env, SEQUENCE (COMPUTATION (BINARY (ASSIGN, VARIABLE vn, expr)), assigns), max_index)
-  | (DECDEF (INT _, _, []))::t -> analyzeDefinitions t index
+  | (DECDEF (INT _, _, []))::t -> analyseDefinitions t index
   | _ -> notSupported ()
 
-and analyzeFunctions (definitions: definition list) =
+and analyseFunctions (definitions: definition list) =
   begin match definitions with
   | [] -> ()
   | (FUNDEF (name, b))::t ->
     print_endline "Invariants at the end of the function:";
-    let (env, state) = analyzeFunction name b in
+    let (env, state) = analyseFunction name b in
     pretty_print_dbm state env;
-    analyzeFunctions t
+    analyseFunctions t
   | _ -> notSupported ()
   end
  
-and analyzeFunction (name: single_name) (b: body): env * dbm =
-  analyzeBlock b
+and analyseFunction (name: single_name) (b: body): env * dbm =
+  analyseBlock b
 
-and analyzeBlock (defs, stmts: body): env * dbm =
-  let (env, pre_stmts, nb_vars) = analyzeDefinitions defs 0 in
-  let final_state = analyzeStatement (SEQUENCE (pre_stmts, stmts)) env (top nb_vars) in
+and analyseBlock (defs, stmts: body): env * dbm =
+  let (env, pre_stmts, nb_vars) = analyseDefinitions defs 0 in
+  let final_state = analyseStatement (SEQUENCE (pre_stmts, stmts)) env (top nb_vars) in
   (env, final_state)
   
 
-and analyzeStatement (stmt: statement) (env: env) (state: dbm): dbm =
+and analyseStatement (stmt: statement) (env: env) (state: dbm): dbm =
   begin match stmt with
   | NOP -> state
   | COMPUTATION expr ->
-    analyzeExpression env state expr
-  | BLOCK ([], stmt1) -> analyzeStatement stmt1 env state
+    analyseExpression env state expr
+  | BLOCK ([], stmt1) -> analyseStatement stmt1 env state
   | BLOCK _ -> notSupported ()
   | SEQUENCE (stmt1, stmt2) -> 
-    state |> analyzeStatement stmt1 env |> analyzeStatement stmt2 env
+    state |> analyseStatement stmt1 env |> analyseStatement stmt2 env
   | IF (cond, then_stmt, else_stmt) ->
     let state_then = backwardBooleanExpression env state cond in
     let state_else = backwardBooleanExpression env state (negateExpression cond) in
-    join (analyzeStatement then_stmt env state_then) (analyzeStatement else_stmt env state_else)
+    join (analyseStatement then_stmt env state_then) (analyseStatement else_stmt env state_else)
   | WHILE (cond, stmt) ->
     let input_state = ref state in
     let continue = ref true in
     while !continue do
-      let inner_output_state = analyzeStatement stmt env (backwardBooleanExpression env !input_state cond) in
+      let inner_output_state = analyseStatement stmt env (backwardBooleanExpression env !input_state cond) in
+      continue := not (is_inside inner_output_state !input_state);
       continue := not (is_inside inner_output_state !input_state);
       input_state := standard_widening !input_state inner_output_state
     done;
     continue := true;
     while !continue do
-      let inner_output_state = analyzeStatement stmt env (backwardBooleanExpression env !input_state cond) in
+      let inner_output_state = analyseStatement stmt env (backwardBooleanExpression env !input_state cond) in
       continue := not (is_inside inner_output_state !input_state);
       input_state := standard_narrowing !input_state inner_output_state
     done;
@@ -80,10 +81,10 @@ and analyzeStatement (stmt: statement) (env: env) (state: dbm): dbm =
   | CASE (expr, stmt) -> notSupported ()
   | DEFAULT stmt -> notSupported ()
   | LABEL _ | GOTO _ | ASM _ | GNU_ASM _ -> notSupported ()
-  | STAT_LINE (stmt, _, _) -> analyzeStatement stmt env state
+  | STAT_LINE (stmt, _, _) -> analyseStatement stmt env state
   end
 
-and analyzeExpression (env: env) (state: dbm) (expr: expression): dbm =
+and analyseExpression (env: env) (state: dbm) (expr: expression): dbm =
   begin match expr with
   | NOTHING -> state
   | BINARY (op, expr1, expr2) ->
@@ -104,29 +105,29 @@ and analyzeExpression (env: env) (state: dbm) (expr: expression): dbm =
             | (CONSTANT cst1, CONSTANT cst2) ->
               let c =              
                 match op with
-                | ADD -> (analyzeConstant cst1) #+ (analyzeConstant cst2)
-                | SUB -> (analyzeConstant cst1) #- (analyzeConstant cst2)
-                | MUL -> (analyzeConstant cst1) #* (analyzeConstant cst2)
-                | DIV -> (analyzeConstant cst1) #/ (analyzeConstant cst2)
+                | ADD -> (analyseConstant cst1) #+ (analyseConstant cst2)
+                | SUB -> (analyseConstant cst1) #- (analyseConstant cst2)
+                | MUL -> (analyseConstant cst1) #* (analyseConstant cst2)
+                | DIV -> (analyseConstant cst1) #/ (analyseConstant cst2)
                 | _ -> notSupported ()
               in (0,0,0,0,c)
             | (VARIABLE vn2, CONSTANT cst) -> 
-              (1,get_var_index vn2 env,0,0, begin match op with ADD -> analyzeConstant cst | SUB -> (Number Z.zero) #- (analyzeConstant cst) | _ -> notSupported () end)
+              (1,get_var_index vn2 env,0,0, begin match op with ADD -> analyseConstant cst | SUB -> types_neg (analyseConstant cst) | _ -> notSupported () end)
             | (CONSTANT cst, VARIABLE vn2) ->
-              (begin match op with ADD -> 1 | SUB -> -1 | _ -> notSupported () end, get_var_index vn2 env,0,0,analyzeConstant cst)
+              (begin match op with ADD -> 1 | SUB -> -1 | _ -> notSupported () end, get_var_index vn2 env,0,0,analyseConstant cst)
             | (VARIABLE vn2, VARIABLE vn3) ->
               (1,get_var_index vn2 env,begin match op with ADD -> 1 | SUB -> -1 | _ -> notSupported () end,get_var_index vn3 env,Number Z.zero)
             | _ -> notSupported ()
           in
           dbm_after_assignment_direct state vn_id c (i1,v1) (i2,v2) |> closure
         | CONSTANT cst ->
-          dbm_after_assignment_direct state vn_id (analyzeConstant cst) (0,0) (0,0) |> closure
+          dbm_after_assignment_direct state vn_id (analyseConstant cst) (0,0) (0,0) |> closure
       	| _ -> notSupported ()
         end
       | (ADD_ASSIGN, _) ->
-      	analyzeExpression env state (BINARY (ASSIGN, expr1, BINARY (ADD, expr1, expr2)))
+      	analyseExpression env state (BINARY (ASSIGN, expr1, BINARY (ADD, expr1, expr2)))
       | (SUB_ASSIGN, _) ->
-      	analyzeExpression env state (BINARY (ASSIGN, expr1, BINARY (SUB, expr1, expr2)))
+      	analyseExpression env state (BINARY (ASSIGN, expr1, BINARY (SUB, expr1, expr2)))
       | _ -> notSupported ()
       end
   | QUESTION (cond, expr1, expr2) -> notSupported ()
@@ -141,7 +142,7 @@ and analyzeExpression (env: env) (state: dbm) (expr: expression): dbm =
   | MEMBEROF (structt, elem) -> notSupported ()
   | MEMBEROFPTR (struct_ptr, elem) -> notSupported ()
   | GNU_BODY body -> notSupported ()
-  | EXPR_LINE (expr1, line, line_nbr) -> analyzeExpression env state expr1
+  | EXPR_LINE (expr1, line, line_nbr) -> analyseExpression env state expr1
   | _ -> notSupported ()
   end
 
@@ -156,7 +157,7 @@ and backwardBooleanExpression (env: env) (state: dbm) (expr: expression): dbm =
     begin match (state, expr1, expr2) with
     | (DBM mat, VARIABLE vn, CONSTANT cst) ->
       let new_state = DBM (copy_of_2d_array mat) in
-      let c = analyzeConstant cst in
+      let c = analyseConstant cst in
       let (relation, c): relation * integer =
         match op with
         | LT -> (LE, c #- (Number Z.one))
@@ -200,7 +201,7 @@ and negateExpression (expr: expression): expression =
   | _ -> notSupported ()
   end
 
-and analyzeConstant (cst: constant): integer =
+and analyseConstant (cst: constant): integer =
   begin match cst with
   | CONST_INT nb -> types_of_string nb
   | _ -> notSupported ()

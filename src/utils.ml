@@ -41,15 +41,12 @@ let pretty_print_dbm (d: dbm) (env: env) =
     let nb_vars = (Array.length mat) / 2 in
     let env_arr = retrieve_env env nb_vars in
     for i=0 to nb_vars-1 do
-      for j=0 to nb_vars-1 do
+      for j=i to nb_vars-1 do
         if i=j then
-          (Printf.printf "%s <= %s\n" env_arr.(i) (integer_to_string (mat.(2*i).(2*i+1) #/ two));
-           Printf.printf "%s >= %s\n" env_arr.(i) (integer_to_string ((types_zero #- mat.(2*i+1).(2*i)) #/ two)))
+          Printf.printf "%s %s <= %s\n" (integer_to_string (types_neg ((types_zero #- mat.(2*i+1).(2*i)) #/ two))) env_arr.(i) (integer_to_string (mat.(2*i).(2*i+1) #/ two))
         else
-          (Printf.printf "%s - %s <= %s\n" env_arr.(i) env_arr.(j) (integer_to_string mat.(2*i).(2*j));
-           Printf.printf "%s + %s <= %s\n" env_arr.(i) env_arr.(j) (integer_to_string mat.(2*i).(2*j+1));
-           Printf.printf "-%s - %s <= %s\n" env_arr.(i) env_arr.(j) (integer_to_string mat.(2*i+1).(2*j));
-           Printf.printf "-%s + %s <= %s\n" env_arr.(i) env_arr.(j) (integer_to_string mat.(2*i+1).(2*j+1)))
+          (Printf.printf "%s <= %s - %s <= %s\n" (integer_to_string (types_neg mat.(2*i+1).(2*j+1))) env_arr.(i) env_arr.(j) (integer_to_string mat.(2*i).(2*j));
+           Printf.printf "%s <= %s + %s <= %s\n" (integer_to_string (types_neg mat.(2*i+1).(2*j))) env_arr.(i) env_arr.(j) (integer_to_string mat.(2*i).(2*j+1)))
       done
     done
 

@@ -12,7 +12,7 @@ open Analyser
 let start_parse filename =
   match Frontc.parse_file filename stdout with
   | Frontc.PARSING_ERROR -> failwith "Impossible to parse the file"
-  | Frontc.PARSING_OK definitions -> analyzeFunctions definitions
+  | Frontc.PARSING_OK definitions -> analyseFunctions definitions
 
 
 (* Followings are just my testing code. Feel free to remove them. *)
@@ -179,7 +179,18 @@ let transfer_functions_test () =
 
   print_endline "after assigning v3 = 10v1 - 7v2";
   let m5 = tight_closure_optimized (dbm_after_general_assignment m4 2 (Number Z.zero) [(Number (Z.of_int 10), 0); (Number (Z.of_int (-7)), 1)]) in
-  print_dbm m5
+  print_dbm m5;
+
+
+  print_endline "adding constraints x + y = 15";
+  add_constraint_two m5 false 0 false 1 LE (15 |> types_of_int);
+  add_constraint_two m5 true 0 true 1 LE (-15 |> types_of_int);
+  let m6 = closure m5 in
+  print_dbm m6;
+
+  print_endline "after assigning x = x + 1000";
+  let m7 = closure (dbm_after_assignment_direct m6 0 (types_of_int 1000) (1, 0) (0, 0)) in
+  print_dbm m7
 
 let time f =
   let t = Unix.gettimeofday () in
