@@ -5,6 +5,12 @@ open Types
 let replace_element (matrix: 'a array array) (i: int) (j: int) (f: 'a -> 'a) =
   matrix.(i).(j) <- f matrix.(i).(j)
 
+let integer_to_string (i: integer): string=
+  match i with
+  | Infty false -> "∞"
+  | Infty true -> "-∞"
+  | Number i_z -> Z.to_string i_z
+
 (* Print a 2d integral matrix *)
 let print_2d_int_array (arr: integer array array) = 
   arr |> Array.iter 
@@ -22,6 +28,30 @@ let print_dbm (d: dbm) =
   match d with
   | Bot -> print_endline "⊥"
   | DBM mat -> print_2d_int_array mat
+
+let retrieve_env (env: env) (nb_vars: int): string array =
+  let result = Array.make nb_vars "" in
+  Context.iter (fun vn index -> result.(index) <- vn) env;
+  result
+
+let pretty_print_dbm (d: dbm) (env: env) =
+  match d with
+  | Bot -> print_endline "⊥"
+  | DBM mat ->
+    let nb_vars = (Array.length mat) / 2 in
+    let env_arr = retrieve_env env nb_vars in
+    for i=0 to nb_vars-1 do
+      for j=0 to nb_vars-1 do
+        if i=j then
+          (Printf.printf "%s <= %s\n" env_arr.(i) (integer_to_string (mat.(2*i).(2*i+1) #/ two));
+           Printf.printf "%s >= %s\n" env_arr.(i) (integer_to_string ((types_zero #- mat.(2*i+1).(2*i)) #/ two)))
+        else
+          (Printf.printf "%s - %s <= %s\n" env_arr.(i) env_arr.(j) (integer_to_string mat.(2*i).(2*j));
+           Printf.printf "%s + %s <= %s\n" env_arr.(i) env_arr.(j) (integer_to_string mat.(2*i).(2*j+1));
+           Printf.printf "-%s - %s <= %s\n" env_arr.(i) env_arr.(j) (integer_to_string mat.(2*i+1).(2*j));
+           Printf.printf "-%s + %s <= %s\n" env_arr.(i) env_arr.(j) (integer_to_string mat.(2*i+1).(2*j+1)))
+      done
+    done
 
 (* Get the index of the negative form (positive form) of a variable given the index of its positive form (negative form). *)
 let bar (ind: int): int = 

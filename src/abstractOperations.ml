@@ -36,7 +36,7 @@ let is_inside (d1 : dbm) (d2 : dbm) : bool =
   | (Bot, _) -> true
   | (_, Bot) -> false
   | (DBM mat1, DBM mat2) ->
-    Array.for_all2 (fun a b -> Array.for_all2 (fun c d -> c #>= d) a b) mat1 mat2
+    Array.for_all2 (fun a b -> Array.for_all2 (fun c d -> c #<= d) a b) mat1 mat2
 
 (* Join operation over two DBMs.
    Basically, forall i, j, take max(m_ij, n_ij)

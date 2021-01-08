@@ -1,4 +1,5 @@
 (executable
 	(name octagonai)
+	(modes byte exe)
 	(public_name octagonai)
 	(libraries zarith FrontC))
