@@ -12,7 +12,7 @@ open Analyser
 let start_parse filename =
   match Frontc.parse_file filename stdout with
   | Frontc.PARSING_ERROR -> failwith "Impossible to parse the file"
-  | Frontc.PARSING_OK definitions -> analyzeFunctions definitions
+  | Frontc.PARSING_OK definitions -> analyseFunctions definitions
 
 
 (* Followings are just my testing code. Feel free to remove them. *)
