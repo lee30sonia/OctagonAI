@@ -30,7 +30,7 @@ let rec get_upper_bound m cv =
       #+ (get_upper_bound m tl)
 
 let rec negate_coeff cv =
-  match cv with [] -> [] | (c, v) :: tl -> (types_neg c, v) :: negate_coeff tl 
+  match cv with [] -> [] | (c, v) :: tl -> (types_neg c, v) :: negate_coeff tl
 
 (*
 Returns a new dbm m' given the current dbm m and an assignment of the form 
@@ -97,6 +97,49 @@ let dbm_after_assignment_direct (m : dbm) (i0 : int) (c0 : integer)
           d'.(i).(pi0) <- d'.(i).(bar i) #/ two #+ (d'.(ni0).(pi0) #/ two);
           d'.(ni0).(bar i) <- d'.(i).(pi0))
       done;
+
+      (* Strengthen constrainst when x = x + .. type of assignment *)
+      if i0 == i1 && c1 == 1 then
+        for i = 0 to (2 * n) - 1 do
+          if i != pi0 && i != ni0 then (
+            d'.(pi0).(i) <-
+              min_of
+                [
+                  d'.(pi0).(i);
+                  d.(pi0).(i) #+ c0 #+ (get_best_bound d (c2, i2) (0, 0));
+                ];
+            d'.(bar i).(bar pi0) <- d'.(pi0).(i);
+            d'.(i).(pi0) <-
+              min_of
+                [
+                  d'.(i).(pi0);
+                  d.(i).(pi0)
+                  #+ (types_neg c0)
+                  #+ (get_best_bound d (-c2, i2) (0, 0));
+                ];
+            d'.(bar pi0).(bar i) <- d'.(i).(pi0))
+        done;
+
+      if i0 == i2 && c2 == 1 then
+        for i = 0 to (2 * n) - 1 do
+          if i != pi0 && i != ni0 then (
+            d'.(pi0).(i) <-
+              min_of
+                [
+                  d'.(pi0).(i);
+                  d.(pi0).(i) #+ c0 #+ (get_best_bound d (c1, i1) (0, 0));
+                ];
+            d'.(bar i).(bar pi0) <- d'.(pi0).(i);
+            d'.(i).(pi0) <-
+              min_of
+                [
+                  d'.(i).(pi0);
+                  d.(i).(pi0)
+                  #+ (types_neg c0)
+                  #+ (get_best_bound d (-c1, i1) (0, 0));
+                ];
+            d'.(bar pi0).(bar i) <- d'.(i).(pi0))
+        done;
 
       (* Might be able to strengthen constraints involving v_i1 and v_i2 *)
       if i0 != i1 && c1 == 1 then (
