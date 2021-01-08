@@ -14,6 +14,9 @@ Modules `zarith`, `frontc` and `dune` are necessary for this project to run (`op
 
 Once the project is built, you can analyse a program in the file `program.c` with the command `./main.native program.c`
 
+
+To compile and run the example analysis written in the report, simply use the command `make run`.
+
 # Tests
 
 The command `./main.native --tests` runs a series of tests, in particular on abstraction and transfer functions, and the DBM (Difference Bound Matrix, which stores the information on variables for the analysis) manipulation.
