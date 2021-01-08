@@ -10,7 +10,10 @@ install:
 	$(DUNE) install
 
 run: build
-	./main.native
+	./main.native test.c
+
+tests: build
+	./main.native --tests
 
 doc:
 	cd src/; \

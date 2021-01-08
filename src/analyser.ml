@@ -3,6 +3,7 @@ open Types
 open Cabs
 open AbstractOperations
 open AbstractTransfers
+open Utils
 
 let notSupported () =
   Printexc.get_callstack 5 |> Printexc.raw_backtrace_to_string |> print_endline;
@@ -25,7 +26,9 @@ and analyzeFunctions (definitions: definition list) =
   begin match definitions with
   | [] -> ()
   | (FUNDEF (name, b))::t ->
-    let _ = analyzeFunction name b in
+    print_endline "Invariants at the end of the function:";
+    let (env, state) = analyzeFunction name b in
+    pretty_print_dbm state env;
     analyzeFunctions t
   | _ -> notSupported ()
   end
