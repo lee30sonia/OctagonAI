@@ -62,6 +62,7 @@ and analyzeStatement (stmt: statement) (env: env) (state: dbm): dbm =
     while !continue do
       let inner_output_state = analyzeStatement stmt env (backwardBooleanExpression env !input_state cond) in
       continue := not (is_inside inner_output_state !input_state);
+      continue := not (is_inside inner_output_state !input_state);
       input_state := standard_widening !input_state inner_output_state
     done;
     continue := true;
@@ -111,7 +112,7 @@ and analyzeExpression (env: env) (state: dbm) (expr: expression): dbm =
                 | _ -> notSupported ()
               in (0,0,0,0,c)
             | (VARIABLE vn2, CONSTANT cst) -> 
-              (1,get_var_index vn2 env,0,0, begin match op with ADD -> analyzeConstant cst | SUB -> (Number Z.zero) #- (analyzeConstant cst) | _ -> notSupported () end)
+              (1,get_var_index vn2 env,0,0, begin match op with ADD -> analyzeConstant cst | SUB -> types_neg (analyzeConstant cst) | _ -> notSupported () end)
             | (CONSTANT cst, VARIABLE vn2) ->
               (begin match op with ADD -> 1 | SUB -> -1 | _ -> notSupported () end, get_var_index vn2 env,0,0,analyzeConstant cst)
             | (VARIABLE vn2, VARIABLE vn3) ->
