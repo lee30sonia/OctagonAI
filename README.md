@@ -15,13 +15,16 @@ Once the project is built, you can analyse a program in the file `program.c` wit
 
 The command `./main.native --tests` runs a series of tests, in particular on abstraction and transfer functions, and the DBM (Difference Bound Matrix, which stores the information on variables for the analysis) manipulation.
 
-#Test of DBM implementation
+# Test of DBM implementation
 Tests adding constraints to the DBM and testing if they are satisfied.
-#Test of Closure Algorithms
+
+# Test of Closure Algorithms
 Starts with a DBM with a few constraints, and apply different closure algorithms to them : Shortest path, Strong, tight and Optimised Tight. This is tested with 3 different DBMs of different sizes.
-#Test of Abstract Transfers
+
+# Test of Abstract Transfers
 Tests the state of the DBM after assigning variables with linear combinations of other variables.
-#Test of Timing in closure algorithms
+
+# Test of Timing in closure algorithms
 Tests the time taken by the 4 algorithms cited above on DBM of size 25, 50, 100 and 200.
 
 
