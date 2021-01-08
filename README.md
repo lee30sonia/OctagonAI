@@ -22,7 +22,7 @@ The command `./main.native --tests` runs a series of tests, in particular on abs
 Tests adding constraints to the DBM and testing if they are satisfied.
 
 ### Test of Closure Algorithms
-Starts with a DBM with a few constraints, and apply different closure algorithms to them : Shortest path, Strong, tight and Optimised Tight. This is tested with 3 different DBMs of different sizes.
+Starts with a DBM with a few constraints, and apply different closure algorithms to them : Shortest Path, Strong, Tight and Optimised Tight. This is tested with 3 different DBMs of different sizes.
 
 ### Test of Abstract Transfers
 Tests the state of the DBM after assigning variables with linear combinations of other variables.
