@@ -62,7 +62,13 @@ and analyzeStatement (stmt: statement) (env: env) (state: dbm): dbm =
     while !continue do
       let inner_output_state = analyzeStatement stmt env (backwardBooleanExpression env !input_state cond) in
       continue := not (is_inside inner_output_state !input_state);
-      input_state := join !input_state inner_output_state
+      input_state := standard_widening !input_state inner_output_state
+    done;
+    continue := true;
+    while !continue do
+      let inner_output_state = analyzeStatement stmt env (backwardBooleanExpression env !input_state cond) in
+      continue := not (is_inside inner_output_state !input_state);
+      input_state := standard_narrowing !input_state inner_output_state
     done;
     backwardBooleanExpression env !input_state (negateExpression cond)
   | DOWHILE (cond, stmt) -> notSupported ()
